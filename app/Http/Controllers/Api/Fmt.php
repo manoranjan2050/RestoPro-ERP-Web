@@ -18,6 +18,54 @@ use App\Models\VendorPayment;
  */
 class Fmt
 {
+    /** v2 POS catalogue item (sizes = variants). */
+    public static function catalogItem(\App\Models\Item $i, bool $stock): array
+    {
+        return [
+            'id' => $i->id, 'name' => $i->name, 'category_id' => $i->category_id, 'code' => $i->code, 'barcode' => $i->barcode,
+            'unit' => $i->unit, 'price' => self::money($i->price), 'gst_rate' => (float) $i->gst_rate, 'food_type' => $i->food_type,
+            'photo_url' => $i->photoUrl(),
+            'stock' => $stock && $i->track_stock ? round($i->stockOnHand(), 3) : null,
+            'low' => $stock && $i->isLowStock(),
+            'variants' => $i->variants->map(fn ($v) => [
+                'id' => $v->id, 'name' => $v->name, 'price' => self::money($v->price), 'barcode' => $v->barcode,
+                'stock' => $stock && $i->track_stock ? round((float) $v->stock_qty, 3) : null,
+            ])->values(),
+        ];
+    }
+
+    /** v2 order / bill. $full adds the public link, WhatsApp link and per-rate GST. */
+    public static function order(\App\Models\Order $o, bool $full = false): array
+    {
+        $out = [
+            'id' => $o->id, 'number' => $o->number, 'ref' => $o->ref(), 'type' => $o->type, 'status' => $o->status,
+            'stage' => $o->stage, 'stage_label' => $o->stageLabel(), 'next_stage' => $o->nextStage(),
+            'table' => $o->table ? ['id' => $o->table->id, 'name' => $o->table->name] : null, 'guests' => $o->guests,
+            'customer_name' => $o->customer_name, 'customer_mobile' => $o->customer_mobile,
+            'delivery_address' => $o->delivery_address, 'delivery_charge' => self::money($o->delivery_charge),
+            'due_at' => $o->due_at?->format('Y-m-d H:i'), 'details' => (object) ($o->details ?? []),
+            'gst_enabled' => $o->gst_enabled, 'subtotal' => self::money($o->subtotal), 'discount_type' => $o->discount_type,
+            'discount_value' => self::money($o->discount_value), 'discount' => self::money($o->discount), 'taxable' => self::money($o->taxable),
+            'cgst' => self::money($o->cgst), 'sgst' => self::money($o->sgst), 'round_off' => self::money($o->round_off),
+            'total' => self::money($o->total), 'paid' => self::money($o->paid), 'balance' => self::money($o->balance()),
+            'note' => $o->note, 'cancel_reason' => $o->cancel_reason,
+            'billed_at' => $o->billed_at?->toIso8601String(), 'created_at' => $o->created_at?->toIso8601String(),
+            'items' => $o->items->map(fn ($l) => [
+                'id' => $l->id, 'item_id' => $l->item_id, 'variant_id' => $l->variant_id, 'name' => $l->name, 'variant_name' => $l->variant_name,
+                'unit' => $l->unit, 'qty' => (float) $l->qty, 'rate' => self::money($l->rate), 'gst_rate' => (float) $l->gst_rate,
+                'amount' => self::money($l->amount), 'total' => self::money($l->total), 'note' => $l->note, 'kot_no' => $l->kot_no,
+            ])->values(),
+            'payments' => $o->payments->map(fn ($p) => ['id' => $p->id, 'date' => $p->date->toDateString(), 'mode' => $p->mode, 'amount' => self::money($p->amount)])->values(),
+        ];
+        if ($full) {
+            $out['public_url'] = \App\Services\BillView::publicUrl($o);
+            $out['whatsapp_url'] = \App\Services\BillView::whatsappUrl($o);
+            $out['pdf_url'] = $o->status !== 'held' ? route('api.sales.orders.pdf', $o) : null;
+        }
+
+        return $out;
+    }
+
     public static function money($v): float
     {
         return round((float) $v, 2);
@@ -28,7 +76,7 @@ class Fmt
         return [
             'id' => $u->id, 'name' => $u->name, 'username' => $u->username, 'email' => $u->email, 'mobile' => $u->mobile,
             'role' => $u->role, 'photo_url' => $u->photoUrl(),
-            'can' => ['delete' => $u->isOwner(), 'backups' => $u->isOwner()],
+            'can' => ['delete' => $u->isOwner(), 'backups' => $u->isOwner(), 'back_office' => ! $u->isCashier()],
         ];
     }
 

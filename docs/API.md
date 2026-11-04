@@ -98,6 +98,32 @@ Expense fields: `amount`, `paid_at_purchase`, `paid_total` (incl. vendor khata p
 | GET | `/analytics?fy=` | annual summary: months, totals, compare, mom, cumulative, weekday, categories, best/worst days, insights |
 | GET / POST | `/backups` | owner only; POST = back up now (restore is website-only on purpose) |
 
+## v2 sales (Advanced mode only, `404` in Simple mode)
+
+`/meta` carries `sales {mode, features{tables,delivery,advance,stock}, gst, gst_inclusive, round_off, delivery_charge,
+order_types[], pay_modes[], stages{delivery,advance}, print{width,footer,logo,auto,kot}}` and `user.can.back_office`
+(false for cashiers). Cashiers may use every endpoint below except `cancel` and `day-end`.
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/sales/catalog` | `categories[]`, `items[] {id, name, category_id, code, barcode, unit, price, gst_rate, food_type, photo_url, stock, low, variants[{id,name,price,barcode,stock}]}` (`stock` null = not tracked) |
+| GET | `/sales/customers/lookup?mobile=` | `{data: {id,name,mobile,address} \| null}` |
+| GET | `/sales/tables` | `data[] {id, name, area, seats, order: {id,total,items,guests,since} \| null}` |
+| GET | `/sales/orders?tab=` | `bills` (`date=` or `q=`) · `running` · `delivery` · `advance` · `held` |
+| POST | `/sales/orders` | body `cart[{item_id, variant_id?, qty, note?, kot_no?}]`, `mode` complete\|open\|hold, `payments[{mode,amount}]`, `type`, `discount_value`, `discount_type` amt\|pct, `customer_name`, `customer_mobile`, `note`, `table_id`, `guests`, `delivery_address`, `delivery_charge`, `due_at` "Y-m-d H:i", `details{flavour,weight,shape,message,eggless,instructions}` → `{data: order, print: lines[], kot: lines[]}` |
+| PUT | `/sales/orders/{id}` | same body, for held/open orders (send `kot_no` back on lines already sent to the kitchen) |
+| GET | `/sales/orders/{id}` | order incl. `public_url`, `whatsapp_url`, `pdf_url` |
+| POST | `/sales/orders/{id}/kot` | numbers unsent lines → `{kot_no, order, print: lines[]}` |
+| POST | `/sales/orders/{id}/stage` | `{stage}` (delivery / advance steps) |
+| POST | `/sales/orders/{id}/move` | `{table_id}` |
+| POST | `/sales/orders/{id}/cancel` | `{reason}`, owner only |
+| GET | `/sales/orders/{id}/print?kind=receipt\|kot&kot=&width=58\|80` | `{width: 32\|48, lines[]}` |
+| GET | `/sales/orders/{id}/pdf` | A5 PDF |
+| GET | `/sales/day-end?date=` | day-end report + `print: lines[]` (owner/manager) |
+
+**Print lines** are ready for ESC/POS: `{t: text, a: L|C|R, b: bold, s: 1|2 (double size)}` or `{hr: "-"|"="}` (a full-width
+rule). Text is plain ASCII (₹ → "Rs.") and already fits the width (32 characters for 58 mm, 48 for 80 mm; half for `s: 2`).
+
 ## Example
 
 ```bash

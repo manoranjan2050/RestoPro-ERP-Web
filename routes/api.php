@@ -23,6 +23,24 @@ Route::prefix('v1')->name('api.')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::get('/meta', [AuthController::class, 'metaEndpoint']);
 
+        // v2 sales (Advanced mode) — cashiers too. 404 in Simple mode.
+        Route::middleware('advanced')->prefix('sales')->name('sales.')->controller(\App\Http\Controllers\Api\SalesController::class)->group(function () {
+            Route::get('/catalog', 'catalog')->name('catalog');
+            Route::get('/customers/lookup', 'lookupCustomer')->name('customers.lookup');
+            Route::get('/tables', 'tables')->name('tables');
+            Route::get('/orders', 'index')->name('orders.index');
+            Route::post('/orders', 'store')->name('orders.store');
+            Route::get('/orders/{order}', 'show')->name('orders.show');
+            Route::put('/orders/{order}', 'update')->name('orders.update');
+            Route::post('/orders/{order}/kot', 'kot')->name('orders.kot');
+            Route::post('/orders/{order}/stage', 'stage')->name('orders.stage');
+            Route::post('/orders/{order}/move', 'move')->name('orders.move');
+            Route::post('/orders/{order}/cancel', 'cancel')->name('orders.cancel');
+            Route::get('/orders/{order}/print', 'printLines')->name('orders.print');
+            Route::get('/orders/{order}/pdf', 'pdf')->name('orders.pdf');
+            Route::get('/day-end', 'dayEnd')->name('day-end');
+        });
+
         // v1 back office — owner + manager only (cashiers use the sales endpoints).
         Route::middleware('can:back-office')->group(function () {
         Route::get('/dashboard', DashboardController::class);

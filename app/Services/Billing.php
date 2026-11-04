@@ -57,7 +57,7 @@ class Billing
      */
     public static function price(array $cart): array
     {
-        $items = Item::whereIn('id', array_column($cart, 'item_id'))->get()->keyBy('id');
+        $items = Item::withCount(['variants' => fn ($q) => $q->where('is_active', true)])->whereIn('id', array_column($cart, 'item_id'))->get()->keyBy('id');
         $variants = ItemVariant::whereIn('id', array_filter(array_column($cart, 'variant_id')))->get()->keyBy('id');
         $lines = [];
         foreach (array_values($cart) as $i => $c) {
@@ -65,6 +65,9 @@ class Billing
             $variant = ! empty($c['variant_id']) ? ($variants[$c['variant_id']] ?? null) : null;
             if (! $item || (! empty($c['variant_id']) && (! $variant || $variant->item_id !== $item->id))) {
                 throw ValidationException::withMessages(['cart' => 'An item on this bill no longer exists. Remove it and add it again.']);
+            }
+            if (! $variant && $item->variants_count > 0) {
+                throw ValidationException::withMessages(['cart' => "Choose a size for {$item->name}."]);
             }
             $qty = round((float) $c['qty'], 3);
             if ($qty <= 0 || $qty > 99999) {

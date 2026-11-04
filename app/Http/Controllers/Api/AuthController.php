@@ -78,6 +78,18 @@ class AuthController extends Controller
             'attendance_codes' => Fmt::attendanceCodes(),
             'staff_payment_types' => collect(StaffPayment::TYPES)->map(fn ($v, $k) => ['code' => $k, 'label' => $v[0]])->values(),
             'server_time' => now()->toIso8601String(),
+            // v2 — the app shows the Sell tab only when sales.mode is "advanced"
+            'sales' => [
+                'mode' => \App\Support\Sales::advanced() ? 'advanced' : 'simple',
+                'features' => collect(array_keys(\App\Support\Sales::FEATURES))->mapWithKeys(fn ($f) => [$f => \App\Support\Sales::on($f)]),
+                'gst' => \App\Support\Sales::gst(), 'gst_inclusive' => \App\Support\Sales::gstInclusive(),
+                'round_off' => \App\Services\Billing::roundOff(),
+                'delivery_charge' => \App\Services\Billing::defaultDeliveryCharge(),
+                'order_types' => collect(\App\Models\Order::TYPES)->map(fn ($l, $k) => ['code' => $k, 'label' => $l])->values(),
+                'pay_modes' => collect(\App\Models\OrderPayment::MODES)->map(fn ($v, $k) => ['code' => $k, 'label' => $v[0]])->values(),
+                'stages' => \App\Models\Order::STAGES,
+                'print' => \App\Services\BillView::printSettings(),
+            ],
         ];
     }
 }
