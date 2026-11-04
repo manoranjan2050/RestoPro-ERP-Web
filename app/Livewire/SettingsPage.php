@@ -1,0 +1,196 @@
+<?php
+
+namespace App\Livewire;
+
+use App\Models\Setting;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
+use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
+use Livewire\Component;
+use Livewire\WithFileUploads;
+
+/** Owner-only: business details + logo, money & year, and team logins (owner / manager). */
+#[Title('Settings')]
+class SettingsPage extends Component
+{
+    use WithFileUploads;
+
+    /** Business keys shown on screens, PDFs, the staff share page and backups. */
+    public const BUSINESS_KEYS = [
+        'business_name', 'business_tagline', 'business_address', 'business_phone', 'business_email', 'business_gstin', 'business_fssai',
+    ];
+
+    #[Url]
+    public string $tab = 'business';
+
+    public array $biz = [];
+    public $logo;
+
+    public string $currency_symbol = '₹';
+    public string $fy_start_month = '4';
+
+    // user form
+    public bool $showUser = false;
+    public ?int $userId = null;
+    public array $u = [];
+
+    public function mount(): void
+    {
+        Gate::authorize('manage-settings');
+        foreach (self::BUSINESS_KEYS as $k) {
+            $this->biz[$k] = (string) Setting::get($k, '');
+        }
+        $this->currency_symbol = (string) Setting::get('currency_symbol', '₹');
+        $this->fy_start_month = (string) Setting::get('fy_start_month', '4');
+    }
+
+    public function saveBusiness(): void
+    {
+        Gate::authorize('manage-settings');
+        $this->biz = array_map(fn ($v) => trim((string) $v), $this->biz);
+        $this->biz['business_gstin'] = mb_strtoupper($this->biz['business_gstin'] ?? '');
+        $this->validate([
+            'biz.business_name' => ['required', 'string', 'max:60'],
+            'biz.business_tagline' => ['nullable', 'string', 'max:80'],
+            'biz.business_address' => ['nullable', 'string', 'max:200'],
+            'biz.business_phone' => ['nullable', 'string', 'max:40', 'regex:/^[0-9+\-\s,\/]+$/'],
+            'biz.business_email' => ['nullable', 'email', 'max:120'],
+            'biz.business_gstin' => ['nullable', 'regex:/^[0-9]{2}[A-Z0-9]{13}$/'],
+            'biz.business_fssai' => ['nullable', 'digits:14'],
+            'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
+        ], [
+            'biz.business_gstin.regex' => 'GSTIN is 15 characters, e.g. 21ABCDE1234F1Z5.',
+            'biz.business_fssai.digits' => 'FSSAI licence number is 14 digits.',
+        ], ['biz.business_name' => 'business name']);
+
+        foreach (self::BUSINESS_KEYS as $k) {
+            Setting::put($k, $this->biz[$k] !== '' ? $this->biz[$k] : null);
+        }
+        if ($this->logo) {
+            $old = Setting::get('business_logo');
+            Setting::put('business_logo', $this->logo->store('logos', 'public'));
+            if ($old) {
+                Storage::disk('public')->delete($old);
+            }
+            $this->reset('logo');
+        }
+        $this->dispatch('toast', message: 'Business details saved');
+    }
+
+    public function removeLogo(): void
+    {
+        Gate::authorize('manage-settings');
+        if ($old = Setting::get('business_logo')) {
+            Storage::disk('public')->delete($old);
+            Setting::put('business_logo', null);
+        }
+        $this->dispatch('toast', message: 'Logo removed');
+    }
+
+    public function saveMoney(): void
+    {
+        Gate::authorize('manage-settings');
+        $this->currency_symbol = trim($this->currency_symbol);
+        $this->validate([
+            'currency_symbol' => ['required', 'string', 'max:4'],
+            'fy_start_month' => ['required', 'integer', 'between:1,12'],
+        ]);
+        Setting::put('currency_symbol', $this->currency_symbol);
+        Setting::put('fy_start_month', (string) (int) $this->fy_start_month);
+        $this->dispatch('toast', message: 'Saved');
+    }
+
+    // ---------------- users
+
+    public function newUser(): void
+    {
+        $this->resetValidation();
+        $this->userId = null;
+        $this->u = ['name' => '', 'username' => '', 'mobile' => '', 'email' => '', 'role' => User::ROLE_MANAGER, 'is_active' => true, 'password' => ''];
+        $this->showUser = true;
+    }
+
+    public function editUser(int $id): void
+    {
+        $this->resetValidation();
+        $user = User::findOrFail($id);
+        $this->userId = $user->id;
+        $this->u = $user->only(['name', 'username', 'mobile', 'email', 'role', 'is_active']) + ['password' => ''];
+        $this->u = array_map(fn ($v) => $v ?? '', $this->u);
+        $this->u['is_active'] = (bool) $user->is_active;
+        $this->showUser = true;
+    }
+
+    public function cancel(): void
+    {
+        $this->showUser = false;
+        $this->resetValidation();
+    }
+
+    public function saveUser(): void
+    {
+        Gate::authorize('manage-settings');
+        $id = $this->userId;
+        $this->u['username'] = mb_strtolower(trim((string) $this->u['username']));
+        $this->u['email'] = trim((string) $this->u['email']) !== '' ? mb_strtolower(trim($this->u['email'])) : null;
+        $this->u['mobile'] = User::normaliseMobile($this->u['mobile'] ?: null);
+        $this->u['name'] = trim((string) $this->u['name']);
+
+        $this->validate([
+            'u.name' => ['required', 'string', 'max:80'],
+            'u.username' => ['required', 'alpha_dash', 'min:3', 'max:40', Rule::unique('users', 'username')->ignore($id)],
+            'u.mobile' => ['nullable', 'digits:10', Rule::unique('users', 'mobile')->ignore($id)],
+            'u.email' => ['nullable', 'email', 'max:120', Rule::unique('users', 'email')->ignore($id)],
+            'u.role' => ['required', Rule::in([User::ROLE_OWNER, User::ROLE_MANAGER])],
+            'u.is_active' => ['boolean'],
+            'u.password' => [$id ? 'nullable' : 'required', Password::min(8)],
+        ], [], ['u.name' => 'name', 'u.username' => 'username', 'u.mobile' => 'mobile', 'u.email' => 'email', 'u.password' => 'password']);
+
+        $user = $id ? User::findOrFail($id) : new User;
+        $removesOwner = $user->exists && $user->isOwner() && $user->is_active
+            && ($this->u['role'] !== User::ROLE_OWNER || ! $this->u['is_active']);
+        if ($user->exists && $user->id === Auth::id() && ($this->u['role'] !== $user->role || ! $this->u['is_active'])) {
+            $this->addError('u.role', 'You can\'t change your own role or turn off your own login.');
+
+            return;
+        }
+        if ($removesOwner && User::where('role', User::ROLE_OWNER)->where('is_active', true)->count() <= 1) {
+            $this->addError('u.role', 'There must always be at least one active owner.');
+
+            return;
+        }
+
+        $user->fill(collect($this->u)->only(['name', 'username', 'mobile', 'email', 'role', 'is_active'])->all());
+        $signOut = $user->exists && (! $user->is_active || $user->isDirty('role'));
+        if ($this->u['password'] !== '') {
+            $user->password = $this->u['password'];
+            $user->remember_token = Str::random(60);
+            $signOut = $user->exists;
+        }
+        $user->save();
+
+        if ($signOut && $user->id !== Auth::id()) {
+            $user->tokens()->delete();
+            DB::table('sessions')->where('user_id', $user->id)->delete();
+        }
+
+        $this->showUser = false;
+        $this->dispatch('toast', message: $id ? 'Login updated'.($signOut ? ' — they were signed out' : '') : 'Login created');
+    }
+
+    public function render()
+    {
+        return view('livewire.settings', [
+            'users' => User::orderByDesc('is_active')->orderByRaw("role = 'owner' desc")->orderBy('name')->get(),
+            'logoPath' => Setting::get('business_logo'),
+            'months' => collect(range(1, 12))->mapWithKeys(fn ($m) => [$m => \Illuminate\Support\Carbon::create(2000, $m, 1)->format('F')]),
+        ]);
+    }
+}
