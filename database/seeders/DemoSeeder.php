@@ -46,6 +46,7 @@ class DemoSeeder extends Seeder
             $vid[$c] = \App\Models\Vendor::updateOrCreate(['name' => $name], ['default_category_id' => $cat[$c], 'opening_balance' => $ob])->id;
         }
         $this->seedStaff($days);
+        $this->seedSales();
         if (\App\Models\Expense::count() > 0) {
             return;
         }
@@ -65,6 +66,109 @@ class DemoSeeder extends Seeder
                 ]);
             }
         }
+    }
+
+    /**
+     * v2 sample shop: menu with sizes, tables, customers, two weeks of POS bills, a running table, a delivery and
+     * advance cake orders. DEMO_MODE=advanced also switches the app to Advanced mode.
+     */
+    private function seedSales(): void
+    {
+        if (\App\Models\Item::count() > 0) {
+            return;
+        }
+        $user = \App\Models\User::orderBy('id')->first();
+        if (! $user) {
+            return;
+        }
+        $menu = [
+            'Cakes' => ['#ec4899', [
+                ['Black Forest', 'egg', [['500 g', 450], ['1 kg', 850], ['2 kg', 1650]]],
+                ['Pineapple Cake', 'egg', [['500 g', 400], ['1 kg', 780]]],
+                ['Chocolate Truffle', 'egg', [['500 g', 550], ['1 kg', 1050]]],
+                ['Eggless Butterscotch', 'veg', [['500 g', 480], ['1 kg', 920]]],
+            ]],
+            'Pastries' => ['#f59e0b', [['Chocolate Pastry', 'egg', 70], ['Red Velvet Pastry', 'egg', 90], ['Black Forest Pastry', 'egg', 65], ['Blueberry Cheesecake', 'egg', 120]]],
+            'Snacks' => ['#10b981', [['Veg Puff', 'veg', 25], ['Paneer Roll', 'veg', 60], ['Chicken Patties', 'nonveg', 45], ['Veg Sandwich', 'veg', 70]]],
+            'Beverages' => ['#0ea5e9', [['Masala Tea', 'veg', 20], ['Cold Coffee', 'veg', 90], ['Fresh Lime Soda', 'veg', 60], ['Hot Chocolate', 'veg', 110]]],
+        ];
+        $all = [];
+        $sort = 0;
+        foreach ($menu as $cat => [$color, $items]) {
+            $c = \App\Models\ItemCategory::create(['name' => $cat, 'color' => $color, 'sort' => $sort++]);
+            foreach ($items as [$name, $food, $price]) {
+                $item = \App\Models\Item::create([
+                    'category_id' => $c->id, 'name' => $name, 'food_type' => $food, 'gst_rate' => 5,
+                    'hsn' => in_array($cat, ['Cakes', 'Pastries'], true) ? '1905' : '2106',
+                    'price' => is_array($price) ? $price[0][1] : $price,
+                    'track_stock' => in_array($cat, ['Cakes', 'Pastries'], true), 'low_stock_at' => 3,
+                    'code' => strtoupper(implode('', array_map(fn ($w) => $w[0], explode(' ', $name)))).$c->id,
+                ]);
+                foreach (is_array($price) ? $price : [] as $i => [$vn, $vp]) {
+                    $item->variants()->create(['name' => $vn, 'price' => $vp, 'sort' => $i]);
+                }
+                $all[] = $item->load('variants');
+            }
+        }
+        foreach (['T1', 'T2', 'T3', 'T4', 'T5', 'T6'] as $i => $t) {
+            \App\Models\DiningTable::create(['name' => $t, 'area' => $i < 4 ? 'Ground floor' : 'Terrace', 'seats' => $i % 2 ? 2 : 4, 'sort' => $i]);
+        }
+        $people = [['Priya Das', '9000000101'], ['Rahul Sahoo', '9000000102'], ['Meena Patra', '9000000103'], ['Arjun Rath', '9000000104'], ['Sneha Mishra', '9000000105']];
+        foreach ($people as $i => [$n, $m]) {
+            \App\Models\Customer::create(['name' => $n, 'mobile' => $m, 'birthday' => today()->subYears(25 + $i)->addDays($i * 2)->toDateString(), 'address' => ($i + 3).' Station Road']);
+        }
+
+        $wasMode = \App\Models\Setting::get('app_mode', 'simple');
+        \App\Models\Setting::put('app_mode', 'advanced'); // Billing reads the mode for GST / stock
+        foreach ($all as $item) {
+            if ($item->track_stock) {
+                foreach ($item->variants->isNotEmpty() ? $item->variants : [null] as $v) {
+                    \App\Services\Stock::move($item, $v, mt_rand(8, 20), 'opening', $user);
+                }
+            }
+        }
+        $pick = function () use ($all) {
+            $item = $all[array_rand($all)];
+            $v = $item->variants->isNotEmpty() ? $item->variants->random() : null;
+
+            return ['item_id' => $item->id, 'variant_id' => $v?->id, 'qty' => $v ? 1 : mt_rand(1, 3), 'note' => ''];
+        };
+        $base = today(); // fixed before faking the clock (today() follows Carbon::setTestNow)
+        for ($d = 13; $d >= 0; $d--) {
+            $n = mt_rand(6, 12);
+            for ($b = 0; $b < $n; $b++) {
+                \Illuminate\Support\Carbon::setTestNow($base->copy()->subDays($d)->setTime(mt_rand(9, 20), mt_rand(0, 59)));
+                $cart = array_map(fn () => $pick(), range(1, mt_rand(1, 3)));
+                $total = \App\Services\Billing::totals(\App\Services\Billing::price($cart), 0, 'amt')['total'];
+                $who = mt_rand(0, 2) ? null : $people[array_rand($people)];
+                \App\Services\Billing::save($cart, ['type' => mt_rand(0, 3) ? 'counter' : 'takeaway', 'customer_name' => $who[0] ?? null, 'customer_mobile' => $who[1] ?? null],
+                    [['mode' => ['cash', 'upi', 'upi', 'card'][mt_rand(0, 3)], 'amount' => $total]], $user);
+            }
+        }
+        \Illuminate\Support\Carbon::setTestNow();
+        // this morning's baking
+        foreach ($all as $item) {
+            if ($item->track_stock) {
+                foreach ($item->variants->isNotEmpty() ? $item->variants : [null] as $v) {
+                    \App\Services\Stock::move($item, $v, mt_rand(6, 14), 'made', $user);
+                }
+            }
+        }
+
+        $by = fn (string $name) => collect($all)->firstWhere('name', $name);
+        $size = fn (string $name, string $v) => $by($name)->variants->firstWhere('name', $v)->id;
+        $o = \App\Services\Billing::save([['item_id' => $by('Masala Tea')->id, 'qty' => 3], ['item_id' => $by('Paneer Roll')->id, 'qty' => 2]],
+            ['mode' => 'open', 'type' => 'dine_in', 'table_id' => \App\Models\DiningTable::where('name', 'T2')->value('id'), 'guests' => 3], [], $user);
+        \App\Services\Billing::sendKot($o);
+        \App\Services\Billing::save([['item_id' => $by('Veg Puff')->id, 'qty' => 6], ['item_id' => $by('Cold Coffee')->id, 'qty' => 2]],
+            ['mode' => 'open', 'type' => 'delivery', 'customer_name' => 'Rahul Sahoo', 'customer_mobile' => '9000000102', 'delivery_address' => '4 Station Road', 'delivery_charge' => 30], [], $user);
+        \App\Services\Billing::save([['item_id' => $by('Black Forest')->id, 'variant_id' => $size('Black Forest', '1 kg'), 'qty' => 1]],
+            ['mode' => 'open', 'type' => 'advance', 'due_at' => today()->addDay()->setTime(17, 30), 'customer_name' => 'Meena Patra', 'customer_mobile' => '9000000103',
+                'details' => ['flavour' => 'Black Forest', 'weight' => '1 kg', 'message' => 'Happy Birthday Riya', 'eggless' => true]], [['mode' => 'upi', 'amount' => 400]], $user);
+        \App\Services\Billing::save([['item_id' => $by('Chocolate Truffle')->id, 'variant_id' => $size('Chocolate Truffle', '1 kg'), 'qty' => 2]],
+            ['mode' => 'open', 'type' => 'advance', 'due_at' => today()->setTime(19, 0), 'customer_name' => 'Sneha Mishra', 'customer_mobile' => '9000000105',
+                'details' => ['shape' => 'Heart', 'message' => 'Happy Anniversary']], [['mode' => 'cash', 'amount' => 1000]], $user);
+        \App\Models\Setting::put('app_mode', env('DEMO_MODE') === 'advanced' ? 'advanced' : $wasMode);
     }
 
     private function seedStaff(int $days): void
