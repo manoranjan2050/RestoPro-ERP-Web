@@ -12,7 +12,7 @@ Built for Indian restaurants, dhabas, cafés and sweet shops. Runs on cheap shar
 [![Tailwind CSS 4](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![PHP 8.2+](https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php&logoColor=white)](https://www.php.net)
 [![MySQL / SQLite](https://img.shields.io/badge/MySQL%20%C2%B7%20MariaDB%20%C2%B7%20SQLite-4479A1?logo=mysql&logoColor=white)](#-requirements)
-[![Tests](https://img.shields.io/badge/tests-183%20passing-22c55e)](#-tests)
+[![Tests](https://img.shields.io/badge/tests-182%20passing-22c55e)](#-tests)
 [![License: MIT](https://img.shields.io/badge/License-MIT-f97316.svg)](LICENSE)
 
 [Features](#-features) · [v2 Sales counter](#-v2-sales-counter-advanced-mode) · [Screenshots](#-screenshots) · [Quick start](#-quick-start) · [Setup guide](docs/SETUP.md) · [API](docs/API.md) · [Backups](docs/BACKUP_SETUP.md)
@@ -203,7 +203,7 @@ app/Http/Controllers/Api/   REST API v1 (docs/API.md)
 resources/views/       Blade views + reports/pdf.blade.php
 deploy/                deploy.sh + example server configs
 docs/                  setup, API, backup guides, screenshots
-tests/Feature/         183 feature tests
+tests/Feature/         182 feature tests
 ```
 
 ## 🧪 Tests
