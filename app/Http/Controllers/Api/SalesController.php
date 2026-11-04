@@ -165,7 +165,11 @@ class SalesController extends Controller
     {
         $b = $request->validate([
             'cart' => ['required', 'array', 'min:1', 'max:300'],
-            'cart.*.item_id' => ['required', 'integer'],
+            'cart.*.item_id' => ['nullable', 'integer', 'required_without:cart.*.custom'],
+            'cart.*.custom' => ['nullable', 'array'],
+            'cart.*.custom.name' => ['required_with:cart.*.custom', 'string', 'max:100'],
+            'cart.*.custom.rate' => ['required_with:cart.*.custom', 'numeric', 'min:0'],
+            'cart.*.custom.gst_rate' => ['nullable', 'numeric'],
             'cart.*.variant_id' => ['nullable', 'integer'],
             'cart.*.qty' => ['required', 'numeric', 'gt:0'],
             'cart.*.note' => ['nullable', 'string', 'max:120'],

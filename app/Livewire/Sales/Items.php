@@ -92,6 +92,19 @@ class Items extends Component
         $this->variants[] = ['id' => null, 'name' => '', 'price' => '', 'barcode' => '', 'is_active' => true];
     }
 
+    /** Add the shop's standard cake sizes (kg or pound set from Settings); sizes already listed are skipped. */
+    public function addSizes(string $set): void
+    {
+        $have = array_map(fn ($v) => mb_strtolower(trim((string) $v['name'])), $this->variants);
+        // drop an empty row left by "Other size"
+        $this->variants = array_values(array_filter($this->variants, fn ($v) => trim((string) $v['name']) !== '' || trim((string) $v['price']) !== ''));
+        foreach (Sales::SIZES[$set] ?? [] as $name) {
+            if (! in_array(mb_strtolower($name), $have, true)) {
+                $this->variants[] = ['id' => null, 'name' => $name, 'price' => '', 'barcode' => '', 'is_active' => true];
+            }
+        }
+    }
+
     public function removeVariant(int $i): void
     {
         unset($this->variants[$i]);

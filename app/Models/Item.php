@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /** Something the shop sells. With variants, each variant carries its own price (and stock); otherwise `price` is used. */
 class Item extends Model
 {
-    public const UNITS = ['pcs' => 'Piece', 'kg' => 'Kg', 'g' => 'Gram', 'plate' => 'Plate', 'box' => 'Box', 'ltr' => 'Litre', 'cup' => 'Cup'];
+    public const UNITS = ['pcs' => 'Piece', 'kg' => 'Kg', 'g' => 'Gram', 'lb' => 'Pound', 'plate' => 'Plate', 'box' => 'Box', 'ltr' => 'Litre', 'cup' => 'Cup'];
     public const GST_RATES = [0, 5, 12, 18, 28];
     public const FOOD_TYPES = ['veg' => 'Veg', 'egg' => 'Contains egg', 'nonveg' => 'Non-veg'];
 

@@ -149,6 +149,22 @@
                         <input type="checkbox" wire:model="round_off" class="size-4 rounded border-slate-300 text-brand-500"> Round bill totals to the rupee
                     </label>
                 </div>
+                <div class="mt-5 border-t border-slate-100 pt-4 dark:border-slate-800">
+                    <p class="label">Cake weights in</p>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach (\App\Support\Sales::WEIGHT_UNITS as $k => $l)
+                            <label wire:key="wu-{{ $k }}" @class(['flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-2 text-sm',
+                                'border-brand-500 bg-brand-50 dark:bg-brand-500/10' => $weight_unit === $k, 'border-slate-200 dark:border-slate-800' => $weight_unit !== $k])>
+                                <input type="radio" wire:model.live="weight_unit" value="{{ $k }}" class="size-4 text-brand-500"> {{ $l }}
+                            </label>
+                        @endforeach
+                    </div>
+                    <p class="mt-2 text-xs text-slate-500">
+                        Quick sizes on the Items page and the weight picker for advance orders:
+                        <b>{{ collect(\App\Support\Sales::SIZES)->only($weight_unit === 'both' ? ['kg', 'lb'] : [$weight_unit])->flatten()->implode(' · ') }}</b>.
+                        Items sold loose by weight can use the unit <b>Kg</b> or <b>Pound</b>.
+                    </p>
+                </div>
                 <div class="mt-5 flex justify-end"><button class="btn-primary" wire:loading.attr="disabled" wire:target="saveBilling">Save</button></div>
             </form>
         @endif

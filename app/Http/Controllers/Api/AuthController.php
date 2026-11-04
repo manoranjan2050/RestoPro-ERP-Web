@@ -89,6 +89,8 @@ class AuthController extends Controller
                 'pay_modes' => collect(\App\Models\OrderPayment::MODES)->map(fn ($v, $k) => ['code' => $k, 'label' => $v[0]])->values(),
                 'stages' => \App\Models\Order::STAGES,
                 'print' => \App\Services\BillView::printSettings(),
+                'weight_unit' => \App\Support\Sales::weightUnit(),
+                'sizes' => \App\Support\Sales::sizeSets(),
             ],
         ];
     }

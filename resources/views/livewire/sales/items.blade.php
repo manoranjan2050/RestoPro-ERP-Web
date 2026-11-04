@@ -169,8 +169,19 @@
                                 @foreach (\App\Models\Item::UNITS as $k => $l)<option value="{{ $k }}">{{ $l }}</option>@endforeach
                             </select>
                         </div>
-                        <button type="button" wire:click="addVariant" class="btn-ghost ml-auto"><x-icon name="plus" class="size-4" /> {{ count($variants) ? 'Add size' : 'Has sizes (500 g / 1 kg…)' }}</button>
+                        <div class="ml-auto flex flex-wrap gap-2">
+                            @foreach (\App\Support\Sales::sizeSets() as $set => $names)
+                                <button type="button" wire:click="addSizes('{{ $set }}')" class="btn-ghost text-sm" title="{{ implode(', ', $names) }}">+ {{ $set === 'lb' ? 'Pound' : 'Kg' }} sizes</button>
+                            @endforeach
+                            <button type="button" wire:click="addVariant" class="btn-ghost text-sm"><x-icon name="plus" class="size-4" /> {{ count($variants) ? 'Add size' : 'Other size' }}</button>
+                        </div>
                     </div>
+                    @unless (count($variants))
+                        <p class="mt-2 text-xs text-slate-500">
+                            Cakes: tap {{ collect(\App\Support\Sales::sizeSets())->map(fn ($sizes, $set) => '“'.($set === 'lb' ? 'Pound' : 'Kg').' sizes” ('.implode(' / ', $sizes).')')->implode(' or ') }},
+                            then type each price. Remove the sizes you don't sell.
+                        </p>
+                    @endunless
                     @if (count($variants))
                         <div class="mt-4 space-y-2">
                             <div class="hidden grid-cols-[1fr_8rem_9rem_2rem] gap-2 px-1 text-xs font-semibold uppercase text-slate-500 sm:grid"><span>Size</span><span>Price</span><span>Barcode</span><span></span></div>

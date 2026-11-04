@@ -104,6 +104,42 @@ class Pos extends Component
         array_unshift($this->cart, ['key' => Str::random(8), 'item_id' => $item->id, 'variant_id' => $variantId, 'qty' => 1, 'note' => '', 'kot_no' => null]);
     }
 
+    // ---- custom item (not on the menu)
+    public bool $showCustom = false;
+    public string $customName = '';
+    public string $customPrice = '';
+    public string $customQty = '1';
+    public string $customGst = '5';
+
+    public function openCustom(): void
+    {
+        $this->reset('customName', 'customPrice', 'customQty');
+        $this->customGst = Sales::gst() ? '5' : '0';
+        $this->resetValidation();
+        $this->showCustom = true;
+    }
+
+    public function closeCustom(): void
+    {
+        $this->showCustom = false;
+    }
+
+    public function addCustom(): void
+    {
+        $this->customName = trim($this->customName);
+        $this->validate([
+            'customName' => ['required', 'string', 'max:100'],
+            'customPrice' => ['required', 'numeric', 'min:0', 'max:9999999'],
+            'customQty' => ['required', 'numeric', 'gt:0', 'max:99999'],
+            'customGst' => ['required', \Illuminate\Validation\Rule::in(array_map('strval', Item::GST_RATES))],
+        ], [], ['customName' => 'name', 'customPrice' => 'price', 'customQty' => 'quantity']);
+        array_unshift($this->cart, [
+            'key' => Str::random(8), 'item_id' => null, 'variant_id' => null, 'qty' => (float) $this->customQty, 'note' => '', 'kot_no' => null,
+            'custom' => ['name' => $this->customName, 'rate' => (float) $this->customPrice, 'gst_rate' => (float) $this->customGst],
+        ]);
+        $this->showCustom = false;
+    }
+
     /** Enter in the search box: a barcode or short code adds straight away; a single match adds too. */
     public function scan(): void
     {
@@ -365,10 +401,11 @@ class Pos extends Component
         $o->loadMissing('items');
         $this->clear();
         $this->orderId = $o->id;
-        $this->cart = $o->items->filter(fn ($l) => $l->item_id)->map(fn ($l) => [
+        // Lines without an item (custom cakes, or items deleted since) come back as custom lines with their saved name/price.
+        $this->cart = $o->items->map(fn ($l) => [
             'key' => Str::random(8), 'item_id' => $l->item_id, 'variant_id' => $l->variant_id, 'qty' => (float) $l->qty,
             'note' => (string) $l->note, 'kot_no' => $l->kot_no,
-        ])->values()->all();
+        ] + ($l->item_id ? [] : ['custom' => ['name' => $l->label(), 'rate' => (float) $l->rate, 'gst_rate' => (float) $l->gst_rate]]))->values()->all();
         $this->fill([
             'discount_value' => (float) $o->discount_value ? $this->plain((float) $o->discount_value) : '',
             'discount_type' => $o->discount_type, 'customer_mobile' => (string) $o->customer_mobile,

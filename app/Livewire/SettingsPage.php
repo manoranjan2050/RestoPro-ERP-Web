@@ -43,6 +43,7 @@ class SettingsPage extends Component
     public bool $round_off = true;
     public string $max_discount = '100';
     public string $delivery_charge = '0';
+    public string $weight_unit = 'kg';
 
     public string $currency_symbol = '₹';
     public string $fy_start_month = '4';
@@ -70,6 +71,7 @@ class SettingsPage extends Component
         $this->round_off = Setting::get('pos_round_off', '1') === '1';
         $this->max_discount = (string) Setting::get('pos_max_discount', '100');
         $this->delivery_charge = (string) Setting::get('delivery_charge', '0');
+        $this->weight_unit = \App\Support\Sales::weightUnit();
         $this->gst_inclusive = Setting::get('gst_inclusive', '1') === '1' ? '1' : '0';
     }
 
@@ -93,11 +95,13 @@ class SettingsPage extends Component
             'bill_prefix' => ['nullable', 'regex:/^[A-Z0-9\/-]{0,8}$/'],
             'max_discount' => ['required', 'numeric', 'between:0,100'],
             'delivery_charge' => ['required', 'numeric', 'between:0,99999'],
+            'weight_unit' => ['required', Rule::in(array_keys(\App\Support\Sales::WEIGHT_UNITS))],
         ], ['bill_prefix.regex' => 'Up to 8 letters/numbers, e.g. SG/ or MB-.'], ['max_discount' => 'discount limit']);
         Setting::put('bill_prefix', $this->bill_prefix !== '' ? $this->bill_prefix : null);
         Setting::put('pos_round_off', $this->round_off ? '1' : '0');
         Setting::put('pos_max_discount', (string) (float) $this->max_discount);
         Setting::put('delivery_charge', (string) (float) $this->delivery_charge);
+        Setting::put('weight_unit', $this->weight_unit);
         $this->dispatch('toast', message: 'Billing settings saved');
     }
 

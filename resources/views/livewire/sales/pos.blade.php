@@ -23,6 +23,7 @@
                 <input x-ref="search" wire:model.live.debounce.250ms="search" wire:keydown.enter.prevent="scan" type="search" autofocus
                        class="input py-2.5 pl-9" placeholder="Search, short code or scan barcode  (F2)">
             </div>
+            <button wire:click="openCustom" class="btn-ghost shrink-0" title="Something not on the menu, e.g. a made-to-order photo cake"><x-icon name="plus" class="size-4" /> Custom item</button>
             <button wire:click="$set('showHeld', true)" class="btn-ghost relative shrink-0">
                 On hold
                 @if ($held->count())<span class="ml-1 rounded-full bg-amber-500 px-1.5 text-xs font-bold text-white">{{ $held->count() }}</span>@endif
@@ -164,9 +165,16 @@
                 @error('due_at') <p class="error">{{ $message }}</p> @enderror
                 <div class="grid grid-cols-2 gap-2">
                     <input wire:model.blur="details.flavour" class="input py-2 text-sm" placeholder="Flavour" aria-label="Flavour">
-                    <input wire:model.blur="details.weight" class="input py-2 text-sm" placeholder="Weight (e.g. 1 kg)" aria-label="Weight">
+                    <input wire:model.blur="details.weight" class="input py-2 text-sm" placeholder="Weight (e.g. {{ \App\Support\Sales::weightUnit() === 'lb' ? '1 lb' : '1 kg' }})" aria-label="Weight">
                     <input wire:model.blur="details.shape" class="input py-2 text-sm" placeholder="Shape / design" aria-label="Shape">
                     <label class="flex items-center gap-2 text-sm"><input type="checkbox" wire:model="details.eggless" class="size-4 rounded border-slate-300 text-brand-500"> Eggless</label>
+                </div>
+                <div class="flex flex-wrap gap-1">
+                    @foreach (collect(\App\Support\Sales::sizeSets())->flatten() as $w)
+                        <button type="button" wire:key="w-{{ $w }}" wire:click="$set('details.weight', '{{ $w }}')" @class(['rounded-lg px-2 py-1 text-xs font-semibold ring-1',
+                            'bg-slate-900 text-white ring-slate-900 dark:bg-white dark:text-slate-900' => ($details['weight'] ?? '') === $w,
+                            'text-slate-600 ring-slate-200 hover:ring-slate-400 dark:text-slate-300 dark:ring-slate-700' => ($details['weight'] ?? '') !== $w])>{{ $w }}</button>
+                    @endforeach
                 </div>
                 <input wire:model.blur="details.message" class="input py-2 text-sm" maxlength="200" placeholder="Message on cake: Happy Birthday Riya" aria-label="Message on cake">
                 <input wire:model.blur="details.instructions" class="input py-2 text-sm" maxlength="200" placeholder="Other instructions" aria-label="Instructions">
@@ -187,7 +195,7 @@
                         <div class="flex items-center rounded-lg ring-1 ring-slate-200 dark:ring-slate-700">
                             <button wire:click="dec('{{ $c['key'] }}')" class="px-2 py-1 text-lg leading-none text-slate-500 hover:text-rose-600" aria-label="Less">−</button>
                             <input wire:key="q-{{ $c['key'] }}-{{ $c['qty'] }}" value="{{ $qtyLabel($c['qty']) }}" wire:change="setQty('{{ $c['key'] }}', $event.target.value)"
-                                   type="number" step="{{ in_array($p['unit'] ?? 'pcs', ['kg', 'g', 'ltr']) ? '0.001' : '1' }}" min="0"
+                                   type="number" step="{{ in_array($p['unit'] ?? 'pcs', ['kg', 'g', 'lb', 'ltr']) ? '0.001' : '1' }}" min="0"
                                    class="w-12 border-0 bg-transparent p-0 text-center text-sm font-bold tabular-nums focus:ring-0" aria-label="Quantity">
                             <button wire:click="inc('{{ $c['key'] }}')" class="px-2 py-1 text-lg leading-none text-slate-500 hover:text-emerald-600" aria-label="More">+</button>
                         </div>
@@ -336,6 +344,47 @@
                     <span wire:loading.remove wire:target="complete">{{ $payMode === 'open' ? ($type === 'advance' ? 'Book order' : 'Save order') : 'Save bill' }}</span><span wire:loading wire:target="complete">Saving…</span>
                 </button>
             </div>
+        </x-modal>
+    @endif
+
+    {{-- ============ Custom item ============ --}}
+    @if ($showCustom)
+        <x-modal title="Custom item" close="closeCustom" size="max-w-md">
+            <form wire:submit="addCustom" class="space-y-4">
+                <p class="text-sm text-slate-500">For something not on the menu, like a made-to-order cake. For a booking, choose <b>Advance order</b> on the bill to add the pickup time, message on the cake and advance paid.</p>
+                <div>
+                    <label class="label" for="cu-name">What is it?</label>
+                    <input id="cu-name" wire:model="customName" class="input" maxlength="100" placeholder="Photo cake, Spider-Man theme, 2 lb" autofocus>
+                    @error('customName') <p class="error">{{ $message }}</p> @enderror
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="col-span-2">
+                        <label class="label" for="cu-price">Price</label>
+                        <div class="relative">
+                            <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-slate-400">{{ $cur }}</span>
+                            <input id="cu-price" wire:model="customPrice" type="number" min="0" step="0.01" class="input pl-7 tabular-nums">
+                        </div>
+                        @error('customPrice') <p class="error">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="label" for="cu-qty">Qty</label>
+                        <input id="cu-qty" wire:model="customQty" type="number" min="0" step="1" class="input tabular-nums">
+                        @error('customQty') <p class="error">{{ $message }}</p> @enderror
+                    </div>
+                </div>
+                @if ($gst)
+                    <div>
+                        <label class="label" for="cu-gst">GST rate</label>
+                        <select id="cu-gst" wire:model="customGst" class="input">
+                            @foreach (\App\Models\Item::GST_RATES as $r)<option value="{{ $r }}">{{ $r }}%</option>@endforeach
+                        </select>
+                    </div>
+                @endif
+                <div class="flex justify-end gap-2">
+                    <button type="button" wire:click="closeCustom" class="btn-ghost">Cancel</button>
+                    <button class="btn-primary">Add to bill</button>
+                </div>
+            </form>
         </x-modal>
     @endif
 

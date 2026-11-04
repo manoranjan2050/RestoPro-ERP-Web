@@ -61,6 +61,34 @@ class Billing
         $variants = ItemVariant::whereIn('id', array_filter(array_column($cart, 'variant_id')))->get()->keyBy('id');
         $lines = [];
         foreach (array_values($cart) as $i => $c) {
+            // Custom line: something not on the menu (a made-to-order cake). Name and price come from the counter.
+            if (empty($c['item_id']) && ! empty($c['custom'])) {
+                $x = $c['custom'];
+                $name = mb_substr(trim((string) ($x['name'] ?? '')), 0, 100);
+                $rate = round((float) ($x['rate'] ?? 0), 2);
+                $gst = (float) ($x['gst_rate'] ?? 0);
+                $qty = round((float) ($c['qty'] ?? 1), 3);
+                if ($name === '') {
+                    throw ValidationException::withMessages(['cart' => 'Give the custom item a name.']);
+                }
+                if ($rate < 0 || $rate > 9999999) {
+                    throw ValidationException::withMessages(['cart' => "Check the price of {$name}."]);
+                }
+                if (! in_array($gst, array_map('floatval', Item::GST_RATES), true)) {
+                    throw ValidationException::withMessages(['cart' => "GST for {$name} must be 0, 5, 12, 18 or 28%."]);
+                }
+                if ($qty <= 0 || $qty > 99999) {
+                    throw ValidationException::withMessages(['cart' => "Check the quantity of {$name}."]);
+                }
+                $lines[] = [
+                    'item_id' => null, 'variant_id' => null, 'name' => $name, 'variant_name' => null, 'unit' => 'pcs',
+                    'qty' => $qty, 'rate' => $rate, 'gst_rate' => $gst, 'hsn' => trim((string) ($x['hsn'] ?? '')) ?: null,
+                    'note' => isset($c['note']) && trim((string) $c['note']) !== '' ? mb_substr(trim($c['note']), 0, 120) : null,
+                    'kot_no' => isset($c['kot_no']) && $c['kot_no'] ? (int) $c['kot_no'] : null, 'sort' => $i,
+                ];
+
+                continue;
+            }
             $item = $items[$c['item_id']] ?? null;
             $variant = ! empty($c['variant_id']) ? ($variants[$c['variant_id']] ?? null) : null;
             if (! $item || (! empty($c['variant_id']) && (! $variant || $variant->item_id !== $item->id))) {

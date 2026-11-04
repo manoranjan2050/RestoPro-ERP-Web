@@ -17,6 +17,30 @@ class Sales
         'stock' => ['Stock', 'Track how many of an item are left; goes down on every sale.'],
     ];
 
+    /** How cake weights are written in this shop: kg, lb (pound) or both. */
+    public const WEIGHT_UNITS = ['kg' => 'Kg / gram', 'lb' => 'Pound', 'both' => 'Both'];
+
+    /** Standard cake sizes for the quick "add sizes" buttons and the advance-order weight picker. */
+    public const SIZES = [
+        'kg' => ['500 g', '1 kg', '1.5 kg', '2 kg', '3 kg'],
+        'lb' => ['0.5 lb', '1 lb', '1.5 lb', '2 lb', '3 lb'],
+    ];
+
+    public static function weightUnit(): string
+    {
+        $u = (string) Setting::get('weight_unit', 'kg');
+
+        return array_key_exists($u, self::WEIGHT_UNITS) ? $u : 'kg';
+    }
+
+    /** @return array<string, list<string>> size sets to offer, e.g. ['kg' => [...]] or both */
+    public static function sizeSets(): array
+    {
+        $u = self::weightUnit();
+
+        return $u === 'both' ? self::SIZES : [$u => self::SIZES[$u]];
+    }
+
     public static function advanced(): bool
     {
         return Setting::get('app_mode', 'simple') === 'advanced';

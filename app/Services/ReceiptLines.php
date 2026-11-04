@@ -195,7 +195,7 @@ class ReceiptLines
     /** Printers use a 1-byte code page: replace ₹ and typographic marks, drop what can't print. */
     public static function ascii(string $s): string
     {
-        $s = strtr($s, ['₹' => 'Rs.', '–' => '-', '—' => '-', '·' => '-', '’' => "'", '‘' => "'", '“' => '"', '”' => '"', '…' => '...', '×' => 'x', '→' => '>']);
+        $s = strtr($s, ['₹' => 'Rs.', '–' => '-', '—' => '-', '·' => '-', '’' => "'", '‘' => "'", '“' => '"', '”' => '"', '…' => '...', '×' => 'x', '→' => '>', '½' => '1/2', '¼' => '1/4', '¾' => '3/4']);
 
         return preg_replace('/[^\x20-\x7E]/', '', $s) ?? '';
     }
