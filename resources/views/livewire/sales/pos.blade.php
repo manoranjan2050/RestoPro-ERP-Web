@@ -11,6 +11,7 @@
      }"
      @keydown.window.f2.prevent="$refs.search.focus()"
      @keydown.window.f8.prevent="$wire.openPay()"
+     @print-kot.window="printIn('kot', $event.detail.url)"
      @bill-saved.window="cartOpen = false; if ($event.detail.print) printIn('printer', $event.detail.print); if ($event.detail.kot) setTimeout(() => printIn('kot', $event.detail.kot), 1500)"
      class="lg:grid lg:h-[calc(100vh-6.5rem)] lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-5">
 
@@ -93,24 +94,79 @@
     {{-- ============ Bill ============ --}}
     <aside :class="cartOpen ? 'translate-y-0' : 'translate-y-full lg:translate-y-0'"
            class="fixed inset-x-0 bottom-0 z-50 flex max-h-[92vh] flex-col rounded-t-3xl bg-white shadow-2xl transition-transform lg:static lg:z-auto lg:max-h-none lg:rounded-3xl lg:shadow-sm lg:ring-1 lg:ring-slate-200 dark:bg-slate-900 lg:dark:ring-slate-800">
-        <div class="flex items-center gap-2 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-            <div class="inline-flex rounded-lg bg-slate-100 p-0.5 text-xs font-semibold dark:bg-slate-800">
-                @foreach (['counter' => 'Counter', 'takeaway' => 'Takeaway'] as $k => $l)
-                    <button wire:click="$set('type', '{{ $k }}')" @class(['rounded-md px-2.5 py-1', 'bg-white shadow dark:bg-slate-700' => $type === $k, 'text-slate-500' => $type !== $k])>{{ $l }}</button>
+        <div class="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+            <div class="flex items-center gap-2">
+                @if ($current)
+                    <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
+                        {{ $current->status === 'held' ? 'Resumed' : 'Running' }} #{{ $current->id }}{{ $current->table ? ' · '.$current->table->name : '' }}
+                    </span>
+                @endif
+                <button @click="cartOpen = false" class="ml-auto rounded-lg p-1 text-slate-400 lg:hidden" aria-label="Close bill"><x-icon name="x" /></button>
+                @if ($cart || $current)
+                    <button wire:click="clear" wire:confirm="{{ $current && $current->status === 'open' ? 'Leave this order? It stays saved as a running order.' : 'Clear this bill?' }}" class="ml-auto hidden text-xs font-semibold text-rose-600 hover:underline lg:block">{{ $current && $current->status === 'open' ? 'Close' : 'Clear' }}</button>
+                @endif
+            </div>
+            <div class="mt-2 flex flex-wrap gap-1 text-xs font-semibold">
+                @foreach ($types as $k => $l)
+                    <button wire:click="setType('{{ $k }}')" @disabled($current && $current->status === 'open' && $current->type !== $k)
+                        @class(['rounded-lg px-2.5 py-1.5 ring-1 transition disabled:opacity-30',
+                            'bg-slate-900 text-white ring-slate-900 dark:bg-white dark:text-slate-900' => $type === $k,
+                            'text-slate-600 ring-slate-200 hover:ring-slate-400 dark:text-slate-300 dark:ring-slate-700' => $type !== $k])>{{ $l }}</button>
                 @endforeach
             </div>
-            @if ($heldId)<span class="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">resumed #{{ $heldId }}</span>@endif
-            <button @click="cartOpen = false" class="ml-auto rounded-lg p-1 text-slate-400 lg:hidden" aria-label="Close bill"><x-icon name="x" /></button>
-            @if ($cart)
-                <button wire:click="clear" wire:confirm="Clear this bill?" class="ml-auto hidden text-xs font-semibold text-rose-600 hover:underline lg:block">Clear</button>
-            @endif
         </div>
 
-        {{-- Customer --}}
-        <div class="grid grid-cols-2 gap-2 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-            <input wire:model.live.debounce.400ms="customer_mobile" inputmode="numeric" class="input py-2 text-sm" placeholder="Customer mobile" aria-label="Customer mobile">
-            <input wire:model.blur="customer_name" class="input py-2 text-sm" placeholder="Name (optional)" aria-label="Customer name">
-            @error('customer_mobile') <p class="error col-span-2">{{ $message }}</p> @enderror
+        {{-- Customer + type-specific details --}}
+        <div class="max-h-[40vh] space-y-2 overflow-y-auto border-b border-slate-100 px-4 py-3 dark:border-slate-800 lg:max-h-none">
+            @if ($type === 'dine_in')
+                <div class="grid grid-cols-[1fr_5rem] gap-2">
+                    <select wire:model.live="table_id" class="input py-2 text-sm" aria-label="Table">
+                        <option value="">Choose table…</option>
+                        @foreach ($tables->groupBy(fn ($t) => $t->area ?: 'Tables') as $area => $group)
+                            <optgroup label="{{ $area }}">
+                                @foreach ($group as $t)
+                                    @php $busy = $t->openOrder && $t->openOrder->id !== $orderId; @endphp
+                                    <option value="{{ $t->id }}" @disabled($busy)>{{ $t->name }}{{ $busy ? ' (busy)' : '' }} · {{ $t->seats }} seats</option>
+                                @endforeach
+                            </optgroup>
+                        @endforeach
+                    </select>
+                    <input wire:model.blur="guests" type="number" min="1" max="99" class="input py-2 text-sm" placeholder="Guests" aria-label="Guests">
+                </div>
+                @error('table_id') <p class="error">{{ $message }}</p> @enderror
+                @if ($tables->isEmpty())<p class="text-xs text-slate-500">No tables yet — add them on the <a href="{{ route('tables') }}" wire:navigate class="font-semibold text-brand-600">Tables</a> page.</p>@endif
+            @endif
+
+            <div class="grid grid-cols-2 gap-2">
+                <input wire:model.live.debounce.400ms="customer_mobile" inputmode="numeric" class="input py-2 text-sm" placeholder="Customer mobile" aria-label="Customer mobile">
+                <input wire:model.blur="customer_name" class="input py-2 text-sm" placeholder="{{ in_array($type, ['advance']) ? 'Name' : 'Name (optional)' }}" aria-label="Customer name">
+            </div>
+            @error('customer_mobile') <p class="error">{{ $message }}</p> @enderror
+
+            @if ($type === 'delivery')
+                <textarea wire:model.blur="delivery_address" rows="2" class="input py-2 text-sm" placeholder="Delivery address" aria-label="Delivery address"></textarea>
+                <div class="flex items-center gap-2 text-sm">
+                    <span class="text-slate-500">Delivery charge</span>
+                    <input wire:model.live.debounce.400ms="delivery_charge" type="number" min="0" step="1" class="input w-24 py-1.5 text-sm" placeholder="0" aria-label="Delivery charge">
+                </div>
+                @error('delivery_address') <p class="error">{{ $message }}</p> @enderror
+            @endif
+
+            @if ($type === 'advance')
+                <div class="grid grid-cols-2 gap-2">
+                    <input wire:model.blur="due_date" type="date" min="{{ today()->toDateString() }}" class="input py-2 text-sm dark:[color-scheme:dark]" aria-label="Pickup date">
+                    <input wire:model.blur="due_time" type="time" class="input py-2 text-sm dark:[color-scheme:dark]" aria-label="Pickup time">
+                </div>
+                @error('due_at') <p class="error">{{ $message }}</p> @enderror
+                <div class="grid grid-cols-2 gap-2">
+                    <input wire:model.blur="details.flavour" class="input py-2 text-sm" placeholder="Flavour" aria-label="Flavour">
+                    <input wire:model.blur="details.weight" class="input py-2 text-sm" placeholder="Weight (e.g. 1 kg)" aria-label="Weight">
+                    <input wire:model.blur="details.shape" class="input py-2 text-sm" placeholder="Shape / design" aria-label="Shape">
+                    <label class="flex items-center gap-2 text-sm"><input type="checkbox" wire:model="details.eggless" class="size-4 rounded border-slate-300 text-brand-500"> Eggless</label>
+                </div>
+                <input wire:model.blur="details.message" class="input py-2 text-sm" maxlength="200" placeholder="Message on cake: Happy Birthday Riya" aria-label="Message on cake">
+                <input wire:model.blur="details.instructions" class="input py-2 text-sm" maxlength="200" placeholder="Other instructions" aria-label="Instructions">
+            @endif
         </div>
 
         {{-- Lines --}}
@@ -136,6 +192,7 @@
                     <div class="mt-1 flex gap-3 pl-0.5 text-[11px] font-semibold text-slate-400">
                         <button wire:click="$set('noteFor', '{{ $noteFor === $c['key'] ? '' : $c['key'] }}')" class="hover:text-amber-600">{{ $c['note'] !== '' ? 'Edit note' : '+ Note' }}</button>
                         <button wire:click="remove('{{ $c['key'] }}')" class="hover:text-rose-600">Remove</button>
+                        @if (! empty($c['kot_no']))<span class="ml-auto rounded bg-emerald-50 px-1.5 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">KOT {{ $c['kot_no'] }} ✓</span>@elseif ($type === 'dine_in')<span class="ml-auto rounded bg-amber-50 px-1.5 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">new</span>@endif
                     </div>
                     @if ($noteFor === $c['key'])
                         <input value="{{ $c['note'] }}" wire:change="setNote('{{ $c['key'] }}', $event.target.value)" wire:keydown.enter="setNote('{{ $c['key'] }}', $event.target.value)" class="input mt-1 py-1.5 text-sm" placeholder="less sugar, happy birthday Riya…" maxlength="120" autofocus>
@@ -169,6 +226,9 @@
                 <div class="flex justify-between text-xs text-slate-500"><span>SGST</span><span class="tabular-nums">{{ money($live['sgst']) }}</span></div>
                 @if (\App\Support\Sales::gstInclusive())<p class="text-[11px] text-slate-400">GST included in prices</p>@endif
             @endif
+            @if ($type === 'delivery' && (float) $delivery_charge > 0)
+                <div class="flex justify-between text-xs text-slate-500"><span>Delivery</span><span class="tabular-nums">{{ money((float) $delivery_charge) }}</span></div>
+            @endif
             @if ($live['round_off'] != 0)
                 <div class="flex justify-between text-xs text-slate-500"><span>Round off</span><span class="tabular-nums">{{ $live['round_off'] > 0 ? '+' : '' }}{{ number_format($live['round_off'], 2) }}</span></div>
             @endif
@@ -176,12 +236,24 @@
                 <span class="font-semibold">Total</span>
                 <span class="text-2xl font-extrabold tabular-nums">{{ money($live['total']) }}</span>
             </div>
+            @if ($prior > 0)
+                <div class="flex justify-between text-xs font-semibold text-emerald-600"><span>Advance paid</span><span class="tabular-nums">−{{ money($prior) }}</span></div>
+                <div class="flex justify-between font-bold"><span>Balance</span><span class="tabular-nums">{{ money($balance) }}</span></div>
+            @endif
             @error('cart') <p class="error">{{ $message }}</p> @enderror
         </div>
 
-        <div class="grid grid-cols-[auto_1fr] gap-2 border-t border-slate-100 p-3 dark:border-slate-800">
-            <button wire:click="hold" @disabled(! $cart) class="btn-ghost disabled:opacity-40">Hold</button>
-            <button wire:click="openPay" @disabled(! $cart) class="btn-primary justify-center py-3 text-base disabled:opacity-40">Pay {{ money($live['total']) }} <span class="hidden text-xs opacity-70 lg:inline">(F8)</span></button>
+        <div class="flex gap-2 border-t border-slate-100 p-3 dark:border-slate-800">
+            @if ($type === 'dine_in')
+                <button wire:click="sendKot" @disabled(! $cart || ! $unsent) class="btn-ghost flex-1 justify-center disabled:opacity-40">🧾 Send KOT</button>
+            @elseif (in_array($type, ['delivery', 'advance']))
+                <button wire:click="openPay('open')" @disabled(! $cart) class="btn-ghost flex-1 justify-center disabled:opacity-40">{{ $current && $current->status === 'open' ? 'Save changes' : ($type === 'advance' ? 'Book (advance)' : 'Save order') }}</button>
+            @elseif (! $current || $current->status === 'held')
+                <button wire:click="hold" @disabled(! $cart) class="btn-ghost disabled:opacity-40">Hold</button>
+            @endif
+            <button wire:click="openPay" @disabled(! $cart) class="btn-primary flex-[2] justify-center py-3 text-base disabled:opacity-40">
+                {{ $type === 'dine_in' && $current ? 'Settle' : 'Pay' }} {{ money(max(0, $balance)) }} <span class="hidden text-xs opacity-70 lg:inline">(F8)</span>
+            </button>
         </div>
     </aside>
 
@@ -203,8 +275,9 @@
     @if ($showPay)
         <x-modal title="Payment" close="closePay" size="max-w-md">
             <div class="rounded-2xl bg-gradient-to-r from-brand-500 to-rose-500 p-4 text-white">
-                <p class="text-sm opacity-90">Amount to collect</p>
-                <p class="text-3xl font-extrabold tabular-nums">{{ money($live['total']) }}</p>
+                <p class="text-sm opacity-90">{{ $payMode === 'open' ? 'Advance now (optional) · order total '.money($live['total']) : 'Amount to collect' }}</p>
+                <p class="text-3xl font-extrabold tabular-nums">{{ money($payMode === 'open' ? $paidSum : $balance) }}</p>
+                @if ($prior > 0)<p class="text-xs opacity-90">{{ money($prior) }} already paid</p>@endif
             </div>
             <div class="mt-4 grid grid-cols-4 gap-2">
                 @foreach (\App\Models\OrderPayment::MODES as $m => [$label])
@@ -232,7 +305,7 @@
                 <button wire:click="addSplit" class="text-sm font-semibold text-brand-600 hover:underline">+ Split payment</button>
             </div>
 
-            @php $diff = round($live['total'] - $paidSum, 2); $cashIn = collect($payments)->where('mode', 'cash')->sum(fn ($p) => (float) ($p['amount'] ?: 0)); @endphp
+            @php $diff = $payMode === 'open' ? 0.0 : round($balance - $paidSum, 2); $over = round($paidSum - $balance, 2); $cashIn = collect($payments)->where('mode', 'cash')->sum(fn ($p) => (float) ($p['amount'] ?: 0)); @endphp
             @if ($cashIn > 0)
                 <div class="mt-4 flex items-center gap-2 rounded-xl bg-slate-50 p-3 text-sm dark:bg-slate-800/50">
                     <span class="text-slate-500">Cash given</span>
@@ -245,14 +318,17 @@
             @if (abs($diff) > 0.009)
                 <p class="mt-3 text-sm font-semibold {{ $diff > 0 ? 'text-amber-600' : 'text-rose-600' }}">{{ $diff > 0 ? money($diff).' still to collect' : money(-$diff).' more than the bill' }}</p>
             @endif
+            @if ($payMode === 'open')
+                <p class="mt-3 text-sm {{ $over > 0.009 ? 'font-semibold text-rose-600' : 'text-slate-500' }}">{{ $over > 0.009 ? money($over).' more than the order' : 'Balance on '.($type === 'advance' ? 'pickup' : 'delivery').': '.money(max(0, $balance - $paidSum)) }}</p>
+            @endif
             @error('payments') <p class="error mt-2">{{ $message }}</p> @enderror
             @error('cart') <p class="error mt-2">{{ $message }}</p> @enderror
             @error('discount') <p class="error mt-2">{{ $message }}</p> @enderror
 
             <div class="mt-5 flex gap-2">
                 <button wire:click="$set('showPay', false)" class="btn-ghost">Back</button>
-                <button wire:click="complete" wire:loading.attr="disabled" wire:target="complete" @disabled(abs($diff) > 0.009) class="btn-primary flex-1 justify-center py-3 text-base disabled:opacity-40">
-                    <span wire:loading.remove wire:target="complete">Save bill</span><span wire:loading wire:target="complete">Saving…</span>
+                <button wire:click="complete" wire:loading.attr="disabled" wire:target="complete" @disabled(abs($diff) > 0.009 || ($payMode === 'open' && $over > 0.009)) class="btn-primary flex-1 justify-center py-3 text-base disabled:opacity-40">
+                    <span wire:loading.remove wire:target="complete">{{ $payMode === 'open' ? ($type === 'advance' ? 'Book order' : 'Save order') : 'Save bill' }}</span><span wire:loading wire:target="complete">Saving…</span>
                 </button>
             </div>
         </x-modal>
@@ -281,8 +357,9 @@
         <x-modal close="dismissLast" size="max-w-sm">
             <div class="text-center">
                 <span class="mx-auto grid size-16 place-items-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15"><x-icon name="check" class="size-8" /></span>
-                <h2 class="mt-3 text-xl font-extrabold">Bill saved</h2>
-                <p class="text-sm text-slate-500">{{ $last->number }} · {{ money($last->total) }}</p>
+                <h2 class="mt-3 text-xl font-extrabold">{{ $last->status === 'completed' ? 'Bill saved' : ($last->type === 'advance' ? 'Order booked' : 'Order saved') }}</h2>
+                <p class="text-sm text-slate-500">{{ $last->ref() }} · {{ money($last->total) }}{{ $last->balance() > 0.009 ? ' · balance '.money($last->balance()) : '' }}</p>
+                @if ($last->due_at)<p class="text-sm font-semibold text-brand-600">Pickup {{ $last->due_at->format('D d M, h:i A') }}</p>@endif
                 <div class="mt-5 grid grid-cols-2 gap-2">
                     <button type="button" @click="printIn('printer', '{{ route('orders.print', $last) }}?auto=1')" class="btn-ghost justify-center">🖨️ Print</button>
                     @if ($wa = \App\Services\BillView::whatsappUrl($last))

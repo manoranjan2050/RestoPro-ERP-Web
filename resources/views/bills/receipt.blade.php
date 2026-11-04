@@ -12,7 +12,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>{{ $o->number }}</title>
+<title>{{ $o->ref() }}</title>
 <style>
     @page { size: {{ $paper }}mm auto; margin: 0; }
     * { box-sizing: border-box; }
@@ -64,13 +64,22 @@
     <div class="hr2"></div>
     <div class="c b">{{ $title }}</div>
     @if ($o->isCancelled())<div class="stamp">CANCELLED</div>@endif
-    <div class="row sm"><span>Bill: <b>{{ $o->number }}</b></span><span>{{ \App\Models\Order::TYPES[$o->type] ?? '' }}</span></div>
+    <div class="row sm"><span>{{ $o->number ? 'Bill' : 'Order' }}: <b>{{ $o->number ?? '#'.$o->id }}</b></span><span>{{ \App\Models\Order::TYPES[$o->type] ?? '' }}</span></div>
     <div class="row sm"><span>{{ $o->billed_at?->format('d/m/Y h:i A') }}</span>@if ($o->creator)<span>{{ $o->creator->name }}</span>@endif</div>
+    @if ($o->table)<div class="sm">Table: <b>{{ $o->table->name }}</b>{{ $o->guests ? ' · '.$o->guests.' guests' : '' }}</div>@endif
+    @if ($o->due_at)<div class="b">Pickup: {{ $o->due_at->format('D d M Y, h:i A') }}</div>@endif
     @if ($o->customer_name || $o->customer_mobile)
         <div class="sm">Customer: {{ $o->customer_name }}{{ $o->customer_mobile ? ' · '.$o->customer_mobile : '' }}</div>
         @if ($o->customer_gstin)<div class="sm">Cust. GSTIN: {{ $o->customer_gstin }}</div>@endif
     @endif
 
+    @if ($o->delivery_address)<div class="sm">Deliver to: {{ $o->delivery_address }}</div>@endif
+    @if ($o->details)
+        <div class="hr"></div>
+        @foreach (App\Models\Order::CAKE_FIELDS as $k => $label)
+            @if (! empty($o->details[$k]))<div class="sm"><b>{{ $label }}:</b> {{ $k === 'eggless' ? 'Yes' : $o->details[$k] }}</div>@endif
+        @endforeach
+    @endif
     <div class="hr"></div>
     <table>
         <thead><tr><th>Item</th><th class="n">Qty</th><th class="n">Amt</th></tr></thead>

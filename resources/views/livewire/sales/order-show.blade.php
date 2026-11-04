@@ -1,6 +1,6 @@
 @php $o = $order; @endphp
 <div class="mx-auto max-w-3xl space-y-5">
-    <a href="{{ route('orders') }}" wire:navigate class="text-sm text-slate-500 hover:text-slate-800 dark:hover:text-slate-200">‹ Orders & bills</a>
+    <a href="{{ route('orders', $o->status === 'open' && $o->type !== 'counter' ? ['tab' => ['dine_in' => 'running', 'delivery' => 'delivery', 'advance' => 'advance'][$o->type] ?? 'bills'] : []) }}" wire:navigate class="text-sm text-slate-500 hover:text-slate-800 dark:hover:text-slate-200">‹ Orders & bills</a>
 
     @if ($o->isCancelled())
         <div class="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:bg-rose-500/10 dark:text-rose-300">
@@ -11,9 +11,15 @@
     <div class="card overflow-hidden">
         <div class="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 p-5 dark:border-slate-800">
             <div>
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $o->gst_enabled ? 'Tax invoice' : 'Bill' }} · {{ \App\Models\Order::TYPES[$o->type] ?? $o->type }}</p>
-                <h2 class="text-2xl font-extrabold">{{ $o->number }}</h2>
-                <p class="text-sm text-slate-500">{{ $o->billed_at?->format('l, d M Y · h:i A') }}{{ $o->creator ? ' · by '.$o->creator->name : '' }}</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {{ $o->number ? ($o->gst_enabled ? 'Tax invoice' : 'Bill') : 'Running order' }} · {{ \App\Models\Order::TYPES[$o->type] ?? $o->type }}
+                    @if ($o->stageLabel()) · <span class="text-violet-600">{{ $o->stageLabel() }}</span>@endif
+                </p>
+                <h2 class="text-2xl font-extrabold">{{ $o->ref() }}</h2>
+                <p class="text-sm text-slate-500">{{ ($o->billed_at ?? $o->created_at)?->format('l, d M Y · h:i A') }}{{ $o->creator ? ' · by '.$o->creator->name : '' }}</p>
+                @if ($o->table)<p class="text-sm font-semibold">Table {{ $o->table->name }}{{ $o->guests ? ' · '.$o->guests.' guests' : '' }}</p>@endif
+                @if ($o->due_at)<p class="text-sm font-semibold text-brand-600">Pickup {{ $o->due_at->format('D d M Y, h:i A') }}</p>@endif
+                @if ($o->delivery_address)<p class="text-sm text-slate-600 dark:text-slate-300">Deliver to: {{ $o->delivery_address }}</p>@endif
             </div>
             <div class="text-right">
                 <p class="text-sm text-slate-500">Total</p>
@@ -21,6 +27,13 @@
             </div>
         </div>
 
+        @if ($o->details)
+            <div class="border-b border-slate-100 bg-amber-50/60 px-5 py-3 text-sm dark:border-slate-800 dark:bg-amber-500/5">
+                @foreach (\App\Models\Order::CAKE_FIELDS as $k => $label)
+                    @if (! empty($o->details[$k]))<p><span class="text-slate-500">{{ $label }}:</span> <b>{{ $k === 'eggless' ? 'Yes' : $o->details[$k] }}</b></p>@endif
+                @endforeach
+            </div>
+        @endif
         @if ($o->customer_name || $o->customer_mobile)
             <div class="border-b border-slate-100 px-5 py-3 text-sm dark:border-slate-800">
                 <span class="text-slate-500">Customer:</span> <b>{{ $o->customer_name ?: '—' }}</b>{{ $o->customer_mobile ? ' · '.$o->customer_mobile : '' }}{{ $o->customer_gstin ? ' · GSTIN '.$o->customer_gstin : '' }}
@@ -98,7 +111,10 @@
     </div>
 
     <div class="flex flex-wrap gap-2">
-        <a href="{{ route('orders.print', $o) }}" target="_blank" class="btn-primary">🖨️ Print receipt</a>
+        @if ($o->status === 'open')
+            <a href="{{ route('pos', ['order' => $o->id]) }}" wire:navigate class="btn-primary">{{ $o->type === 'dine_in' ? 'Open table bill' : 'Collect & close' }}</a>
+        @endif
+        <a href="{{ route('orders.print', $o) }}" target="_blank" @class(['btn-primary' => $o->status !== 'open', 'btn-ghost' => $o->status === 'open'])>🖨️ Print receipt</a>
         <a href="{{ route('orders.pdf', $o) }}?view=1" target="_blank" class="btn-ghost"><x-icon name="doc" class="size-4" /> PDF</a>
         @if ($wa = \App\Services\BillView::whatsappUrl($o))
             <a href="{{ $wa }}" target="_blank" rel="noopener" class="btn-ghost text-emerald-600"><x-icon name="whatsapp" class="size-4" /> WhatsApp</a>
@@ -115,7 +131,7 @@
     </div>
 
     @if ($confirmCancel)
-        <x-modal title="Cancel {{ $o->number }}?" close="closeCancel" size="max-w-md">
+        <x-modal title="Cancel {{ $o->ref() }}?" close="closeCancel" size="max-w-md">
             <p class="text-sm text-slate-600 dark:text-slate-300">The bill keeps its number but is marked cancelled, and its {{ money($o->paid) }} is taken out of that day's sales. Give the money back to the customer.</p>
             <label class="label mt-4" for="cr">Reason</label>
             <input id="cr" wire:model="reason" class="input" placeholder="wrong item billed, customer returned…" autofocus>

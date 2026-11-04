@@ -5,7 +5,29 @@
         'cancelled' => 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300',
     ];
 @endphp
-<div class="space-y-5">
+<div class="space-y-5" @if ($tab !== 'bills') wire:poll.30s @endif>
+    @if (count($tabs) > 1)
+        <div class="flex max-w-full overflow-x-auto">
+            <div class="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                @foreach ($tabs as $k => $l)
+                    <button wire:click="$set('tab', '{{ $k }}')" @class(['flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-semibold',
+                        'bg-gradient-to-r from-brand-500 to-rose-500 text-white shadow' => $tab === $k,
+                        'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200' => $tab !== $k])>
+                        {{ $l }}
+                        @if (($counts[$k] ?? 0) > 0)<span @class(['rounded-full px-1.5 text-xs', 'bg-white/25' => $tab === $k, 'bg-brand-100 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300' => $tab !== $k])>{{ $counts[$k] }}</span>@endif
+                    </button>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    @if ($tab === 'running')
+        @include('livewire.sales.partials.board-running')
+    @elseif ($tab === 'delivery')
+        @include('livewire.sales.partials.board-delivery')
+    @elseif ($tab === 'advance')
+        @include('livewire.sales.partials.board-advance')
+    @else
     <div class="flex flex-wrap items-center gap-3">
         <div class="flex items-center gap-1">
             <button wire:click="shiftDay(-1)" class="btn-ghost px-2.5" aria-label="Previous day">‹</button>
@@ -54,4 +76,5 @@
         @endforelse
     </div>
     <div>{{ $orders->links() }}</div>
+    @endif
 </div>

@@ -7,7 +7,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>{{ $title }} {{ $o->number }}</title>
+<title>{{ $title }} {{ $o->ref() }}</title>
 <style>
     @page { margin: 22px 24px 30px; }
     * { font-family: 'DejaVu Sans', sans-serif; }
@@ -34,12 +34,12 @@
 </style>
 </head>
 <body>
-<div class="foot">{{ $biz['name'] }} · {{ $o->number }} · computer-generated {{ strtolower($title) }}</div>
+<div class="foot">{{ $biz['name'] }} · {{ $o->ref() }} · computer-generated {{ strtolower($title) }}</div>
 
 <div class="head">
     <div class="title">
         <div class="t">{{ $title }}</div>
-        <div class="no">{{ $o->number }}</div>
+        <div class="no">{{ $o->ref() }}</div>
         <div class="muted">{{ $o->billed_at?->format('d M Y, h:i A') }}</div>
     </div>
     @if ($biz['logo_data'])<img class="logo" src="{{ $biz['logo_data'] }}" alt="">@endif

@@ -13,7 +13,41 @@ class Order extends Model
     public const TYPES = ['counter' => 'Counter', 'takeaway' => 'Takeaway', 'dine_in' => 'Dine-in', 'delivery' => 'Delivery', 'advance' => 'Advance order'];
     public const STATUSES = ['held' => 'On hold', 'open' => 'Open', 'completed' => 'Paid', 'cancelled' => 'Cancelled'];
 
+    /** Steps of a running order, per type. The last step of delivery/advance is "handed over". */
+    public const STAGES = [
+        'delivery' => ['placed' => 'Placed', 'preparing' => 'Preparing', 'ready' => 'Ready', 'out' => 'Out for delivery', 'delivered' => 'Delivered'],
+        'advance' => ['booked' => 'Booked', 'preparing' => 'Preparing', 'ready' => 'Ready', 'delivered' => 'Picked up'],
+    ];
+
+    /** Fields of a custom cake / advance order, kept in `details`. */
+    public const CAKE_FIELDS = ['flavour' => 'Flavour', 'weight' => 'Weight', 'shape' => 'Shape', 'message' => 'Message on cake', 'eggless' => 'Eggless', 'instructions' => 'Instructions'];
+
     protected $guarded = ['id'];
+
+    public function table(): BelongsTo
+    {
+        return $this->belongsTo(DiningTable::class, 'table_id');
+    }
+
+    public function stageLabel(): ?string
+    {
+        return $this->stage ? (self::STAGES[$this->type][$this->stage] ?? ucfirst($this->stage)) : null;
+    }
+
+    /** Next step for the board buttons, or null at the end. */
+    public function nextStage(): ?string
+    {
+        $steps = array_keys(self::STAGES[$this->type] ?? []);
+        $i = array_search($this->stage, $steps, true);
+
+        return $i === false ? ($steps[0] ?? null) : ($steps[$i + 1] ?? null);
+    }
+
+    /** Short reference used before a bill number exists. */
+    public function ref(): string
+    {
+        return $this->number ?? 'Order #'.$this->id;
+    }
 
     protected function casts(): array
     {
@@ -63,6 +97,6 @@ class Order extends Model
 
     public function title(): string
     {
-        return $this->number ? 'Bill '.$this->number : (self::STATUSES[$this->status] ?? 'Order').' #'.$this->id;
+        return $this->number ? 'Bill '.$this->number : (self::TYPES[$this->type] ?? 'Order').' #'.$this->id;
     }
 }

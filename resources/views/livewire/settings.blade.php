@@ -140,6 +140,11 @@
                         @error('max_discount') <p class="error">{{ $message }}</p> @enderror
                         <p class="mt-1 text-xs text-slate-500">Owners can always give any discount.</p>
                     </div>
+                    <div>
+                        <label class="label" for="dc">Default delivery charge</label>
+                        <input id="dc" wire:model="delivery_charge" type="number" min="0" step="1" class="input">
+                        @error('delivery_charge') <p class="error">{{ $message }}</p> @enderror
+                    </div>
                     <label class="flex items-center gap-2 self-center text-sm">
                         <input type="checkbox" wire:model="round_off" class="size-4 rounded border-slate-300 text-brand-500"> Round bill totals to the rupee
                     </label>

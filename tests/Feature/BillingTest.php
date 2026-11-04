@@ -213,7 +213,7 @@ class BillingTest extends TestCase
             ->call('add', $this->puff->id)->set('customer_name', 'Ravi')->call('hold')->assertSet('cart', []);
         $held = Order::where('status', 'held')->sole();
         Livewire::actingAs($this->owner)->test(Pos::class)
-            ->call('resume', $held->id)->assertSet('heldId', $held->id)->assertSet('customer_name', 'Ravi')->assertCount('cart', 1)
+            ->call('resume', $held->id)->assertSet('orderId', $held->id)->assertSet('customer_name', 'Ravi')->assertCount('cart', 1)
             ->call('openPay')->call('complete')->assertHasNoErrors();
         $this->assertSame('completed', $held->fresh()->status);
     }

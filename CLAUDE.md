@@ -62,6 +62,11 @@ php .tools/composer.phar <cmd>       # composer is not installed globally
   FY label (`Billing::fyLabel()`, e.g. 2026-27) + /0001, unique per (fy, seq); held bills have no number; cancelled
   bills keep it. Payments map card/online → Cash Collection `online`. POS cart lines are addressed by `key`, not index
   (index-bound wire:model inputs showed the wrong qty after lines moved).
+- Running orders (Phase 17): Billing::save opts `mode` = hold | open | complete. `status` = money side (held/open/completed/
+  cancelled); `stage` = kitchen/delivery side (Order::STAGES per type). Dine-in = open order on a `dining_tables` row
+  (TABLES is reserved in MySQL); lines carry `kot_no`, Billing::sendKot numbers unsent lines; /orders/{id}/kot?kot=N
+  prints one round. Advance/delivery may take part payments while open; complete needs earlier + new = total.
+  Bill number is given on complete only; open orders show `ref()` ("Order #12"). Boards = Orders tabs running/delivery/advance.
 - Printing: `App\Services\BillView::data($order)` feeds bills/receipt (58/80 mm via @page, browser print), bills/kot,
   bills/pdf (dompdf A5, logo as data URI) and bills/public (/b/{token}, no login, NoIndex, works in Simple mode).
   The POS auto-prints through hidden iframes inside `wire:ignore` (Livewire morph would strip a JS-set src).

@@ -29,6 +29,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('advanced')->group(function () {
         Route::get('/pos', \App\Livewire\Sales\Pos::class)->name('pos');
         Route::get('/orders', \App\Livewire\Sales\Orders::class)->name('orders');
+        Route::get('/tables', \App\Livewire\Sales\Tables::class)->name('tables');
         Route::get('/orders/{order}', \App\Livewire\Sales\OrderShow::class)->name('orders.show');
         Route::get('/orders/{order}/print', [\App\Http\Controllers\BillController::class, 'receipt'])->name('orders.print');
         Route::get('/orders/{order}/kot', [\App\Http\Controllers\BillController::class, 'kot'])->name('orders.kot');

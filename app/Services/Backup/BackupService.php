@@ -33,7 +33,7 @@ class BackupService
         'users', 'settings', 'expense_categories', 'vendors', 'staff',
         'cash_collections', 'expenses', 'vendor_payments', 'vendor_payment_allocations', 'attendances', 'staff_payments',
         // v2 sales
-        'item_categories', 'items', 'item_variants', 'customers', 'orders', 'order_items', 'order_payments',
+        'item_categories', 'items', 'item_variants', 'customers', 'dining_tables', 'orders', 'order_items', 'order_payments',
     ];
 
     /** Settings that must never travel in a backup (they belong to this server). */

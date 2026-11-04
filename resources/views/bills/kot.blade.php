@@ -28,7 +28,11 @@
 <div class="r">
     <div class="c b" style="font-size:1.4em">KITCHEN ORDER</div>
     <div class="c">{{ $o->number ?? 'Order #'.$o->id }} · {{ \App\Models\Order::TYPES[$o->type] ?? '' }}</div>
+    @if ($o->table)<div class="c b" style="font-size:1.6em">{{ $o->table->name }}</div>@endif
+    @isset($kotNo)<div class="c b">KOT {{ $kotNo }}</div>@endisset
     <div class="c">{{ now()->format('d/m h:i A') }}{{ $o->customer_name ? ' · '.$o->customer_name : '' }}</div>
+    @if ($o->due_at)<div class="c b">Pickup {{ $o->due_at->format('D d M, h:i A') }}</div>@endif
+    @if ($o->details)@foreach (App\Models\Order::CAKE_FIELDS as $k => $label)@if (! empty($o->details[$k]))<div><b>{{ $label }}:</b> {{ $k === 'eggless' ? 'Yes' : $o->details[$k] }}</div>@endif @endforeach @endif
     <div class="hr"></div>
     <table>
         @foreach ($o->items as $l)

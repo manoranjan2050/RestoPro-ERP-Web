@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    @include('components.layouts.head', ['title' => ($title === 'BILL' ? 'Bill' : 'Tax invoice').' '.$o->number.' · '.$biz['name']])
+    @include('components.layouts.head', ['title' => ucfirst(strtolower($title)).' '.$o->ref().' · '.$biz['name']])
     <meta name="robots" content="noindex, nofollow, noarchive">
     <meta name="referrer" content="no-referrer">
 </head>
@@ -21,8 +21,8 @@
             </div>
             <div class="mt-5 flex items-end justify-between gap-3">
                 <div>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-white/80">{{ $title === 'BILL' ? 'Bill' : 'Tax invoice' }}</p>
-                    <p class="text-lg font-bold">{{ $o->number }}</p>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-white/80">{{ ucfirst(strtolower($title)) }}</p>
+                    <p class="text-lg font-bold">{{ $o->ref() }}</p>
                     <p class="text-xs text-white/85">{{ $o->billed_at?->format('d M Y, h:i A') }}</p>
                 </div>
                 <p class="text-3xl font-extrabold tabular-nums">{{ money($o->total) }}</p>

@@ -36,7 +36,7 @@ class BillView
                 ->map(fn ($g) => ['taxable' => round($g->sum('taxable'), 2), 'tax' => round($g->sum('tax'), 2)])->sortKeys(),
             'pays' => $order->payments->groupBy('mode')->map(fn ($g, $m) => ['label' => OrderPayment::MODES[$m][0] ?? $m, 'amount' => round($g->sum('amount'), 2)])->values(),
             'print' => self::printSettings(),
-            'title' => $order->gst_enabled ? 'TAX INVOICE' : 'BILL',
+            'title' => $order->number ? ($order->gst_enabled ? 'TAX INVOICE' : 'BILL') : ($order->type === 'advance' ? 'ADVANCE RECEIPT' : 'ORDER'),
         ];
     }
 
@@ -68,7 +68,9 @@ class BillView
         }
         $name = trim((string) $order->customer_name);
         $text = ($name !== '' && $name !== 'Customer' ? "Hi {$name}, t" : 'T').'hank you for shopping at '.Setting::get('business_name').'!'
-            ."\nBill {$order->number} · ".money($order->total)
+            ."\n".($order->number ? "Bill {$order->number}" : $order->ref()).' · '.money($order->total)
+            .($order->due_at ? "\nPickup: ".$order->due_at->format('D d M, h:i A') : '')
+            .($order->balance() > 0.009 ? "\nBalance due: ".money($order->balance()) : '')
             ."\nView / download: {$url}";
 
         return 'https://wa.me/'.($order->customer_mobile ? '91'.$order->customer_mobile : '').'?text='.rawurlencode($text);
