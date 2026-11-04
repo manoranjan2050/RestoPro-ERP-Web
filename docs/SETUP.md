@@ -9,6 +9,7 @@ This guide takes RestoPro ERP from zero to a live site with HTTPS, daily backups
 | [3. Shared hosting (Hostinger / cPanel)](#3-put-it-online-on-shared-hosting-hostinger--cpanel) | the cheap and easy way to go live | 30 min |
 | [4. VPS (Nginx)](#4-put-it-online-on-a-vps-nginx) | your own server | 30 min |
 | [5. After going live](#5-after-going-live) | first sign-in, settings, backups, staff | 15 min |
+| [5b. Thermal printer](#5b-thermal-printer-pos-advanced-mode) | receipt printing from the POS | 10 min |
 | [6. Updating](#6-updating-to-a-new-version) | pulling new versions safely | 2 min |
 | [7. Troubleshooting](#7-troubleshooting) | common problems | — |
 
@@ -249,6 +250,41 @@ Before you import:
 - Delete the `.sql` file from the server afterwards.
 
 The command refuses to import into a database that already has sales, expenses or staff.
+
+---
+
+## 5b. Thermal printer (POS, Advanced mode)
+
+The POS prints receipts and kitchen tickets (KOT) through the browser. Any **58 mm or 80 mm thermal receipt printer**
+with a Windows driver works: USB, LAN or Bluetooth paired to the PC (Epson TM-series, TVS RP-series, Rugtek, Xprinter…).
+
+1. **Install the printer driver** from the maker's site. In *Printer preferences*, set the paper to 80 mm (or 58 mm)
+   with continuous or receipt length, then print a Windows test page.
+2. **Settings → Printing** in RestoPro: choose the same paper width, write your footer message, and tick
+   *Print the bill automatically after Save bill*.
+3. The first time, Chrome's print box appears. Pick the thermal printer, set **Margins: None** and **Scale: 100**, and
+   untick *Headers and footers*. Chrome remembers these settings.
+
+**One-click printing, no dialog (recommended at the counter):**
+
+1. Make the thermal printer the **Windows default printer** (Settings → Bluetooth & devices → Printers →
+   *Let Windows manage my default printer* off → select it → *Set as default*).
+2. Right-click the desktop → New → Shortcut, and paste in (change the address to yours):
+
+   ```
+   "C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk-printing --app=https://erp.example.com/pos
+   ```
+
+3. Name it **RestoPro POS** and open the counter from this shortcut. *Save bill* now prints straight away.
+   Close every other Chrome window first: the flag only applies when this shortcut starts Chrome.
+
+**Other options:**
+- **Reprint**: Orders → open the bill → *Print receipt*.
+- **Kitchen tickets**: Settings → Printing → *Also print a KOT*. From a PC both go to the default printer. A separate
+  kitchen printer works from the Android app.
+- **Phone or tablet only**: the Android app prints to Bluetooth thermal printers directly.
+- **Bills to customers**: every bill has a private link (no login) with a PDF download. Use the *WhatsApp* button on
+  the bill. If the customer's mobile number is on the bill, it opens their chat with the link ready to send.
 
 ---
 

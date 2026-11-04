@@ -224,7 +224,12 @@ class Pos extends Component
         $this->clear();
         $this->lastOrderId = $order->id;
         $this->dispatch('toast', message: $order->number.' saved · '.money($order->total));
-        $this->dispatch('bill-saved', id: $order->id);
+        $print = \App\Services\BillView::printSettings();
+        $this->dispatch('bill-saved',
+            id: $order->id,
+            print: $print['auto'] ? route('orders.print', $order).'?auto=1' : null,
+            kot: $print['kot'] ? route('orders.kot', $order).'?auto=1' : null,
+        );
     }
 
     public function closePicker(): void

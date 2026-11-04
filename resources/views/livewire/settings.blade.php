@@ -2,7 +2,7 @@
     {{-- Tabs --}}
     <div class="flex max-w-full overflow-x-auto">
         <div class="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            @foreach (['business' => 'Business', 'mode' => 'Mode & sales', 'gst' => 'GST', 'money' => 'Money & year', 'users' => 'Users & access'] as $k => $l)
+            @foreach (['business' => 'Business', 'mode' => 'Mode & sales', 'gst' => 'GST', 'printing' => 'Printing', 'money' => 'Money & year', 'users' => 'Users & access'] as $k => $l)
                 <button wire:click="$set('tab', '{{ $k }}')" @class([
                     'whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-semibold',
                     'bg-gradient-to-r from-brand-500 to-rose-500 text-white shadow' => $tab === $k,
@@ -166,6 +166,56 @@
                 <p class="text-xs text-slate-500">Each item's GST rate (0/5/12/18/28 %) and HSN code are set on the Items page. GSTIN in use: <b>{{ \App\Models\Setting::get('business_gstin') ?: 'not set — add it under Business' }}</b></p>
             </div>
             <div class="flex justify-end"><button class="btn-primary" wire:loading.attr="disabled" wire:target="saveGst">Save</button></div>
+        </form>
+    @elseif ($tab === 'printing')
+        <form wire:submit="savePrinting" class="grid gap-6 lg:grid-cols-[1fr_320px]">
+            <div class="card space-y-5 p-5 sm:p-6">
+                <div>
+                    <h3 class="text-base font-bold">Receipt printer</h3>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">For the POS in Advanced mode. Works with any USB/Bluetooth thermal printer installed on the PC; the Android app prints to Bluetooth printers directly.</p>
+                </div>
+                <div>
+                    <p class="label">Paper width</p>
+                    <div class="flex flex-wrap gap-3">
+                        @foreach (\App\Services\BillView::WIDTHS as $k => $l)
+                            <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm dark:border-slate-800">
+                                <input type="radio" wire:model.live="printing.width" value="{{ $k }}" class="size-4 text-brand-500"> {{ $l }}
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+                <div>
+                    <label class="label" for="pf">Message at the bottom of the bill</label>
+                    <textarea id="pf" wire:model="printing.footer" rows="2" maxlength="200" class="input" placeholder="Thank you! Please visit again."></textarea>
+                    @error('printing.footer') <p class="error">{{ $message }}</p> @enderror
+                </div>
+                <div class="space-y-2">
+                    <label class="flex items-center gap-2 text-sm"><input type="checkbox" wire:model="printing.auto" class="size-4 rounded border-slate-300 text-brand-500"> Print the bill automatically after <b>Save bill</b></label>
+                    <label class="flex items-center gap-2 text-sm"><input type="checkbox" wire:model="printing.kot" class="size-4 rounded border-slate-300 text-brand-500"> Also print a kitchen ticket (KOT) for each bill</label>
+                    <label class="flex items-center gap-2 text-sm"><input type="checkbox" wire:model="printing.logo" class="size-4 rounded border-slate-300 text-brand-500"> Print the logo at the top</label>
+                </div>
+                <div class="rounded-xl bg-sky-50 p-3 text-xs text-sky-800 dark:bg-sky-500/10 dark:text-sky-300">
+                    <b>Print without the dialog box:</b> make a Chrome shortcut with <code>--kiosk-printing</code> at the end of “Target” and set the thermal printer as the Windows default. The bill then prints in one click. Step-by-step: docs/SETUP.md → “Thermal printer”.
+                </div>
+                <div class="flex justify-end"><button class="btn-primary" wire:loading.attr="disabled" wire:target="savePrinting">Save</button></div>
+            </div>
+            <div class="card p-4">
+                <p class="mb-2 text-xs font-semibold uppercase text-slate-500">Preview · {{ $printing['width'] }} mm</p>
+                <div class="mx-auto rounded bg-white p-3 font-mono text-[10px] leading-snug text-black shadow-inner ring-1 ring-slate-200" style="width: {{ $printing['width'] === '58' ? '180px' : '250px' }}">
+                    <p class="text-center text-xs font-bold">{{ \App\Models\Setting::get('business_name') }}</p>
+                    @if (\App\Models\Setting::get('business_address'))<p class="text-center">{{ \App\Models\Setting::get('business_address') }}</p>@endif
+                    <p class="my-1 border-t border-dashed border-black"></p>
+                    <p class="text-center font-bold">BILL</p>
+                    <p>Bill: {{ \App\Models\Setting::get('bill_prefix') }}{{ \App\Services\Billing::fyLabel() }}/0001</p>
+                    <p class="my-1 border-t border-dashed border-black"></p>
+                    <p class="font-bold">Black Forest Cake (1 kg)</p><p class="flex justify-between"><span>850</span><span>1</span><span>850</span></p>
+                    <p class="font-bold">Veg Puff</p><p class="flex justify-between"><span>25</span><span>2</span><span>50</span></p>
+                    <p class="my-1 border-t-2 border-black"></p>
+                    <p class="flex justify-between text-xs font-bold"><span>TOTAL</span><span>₹900</span></p>
+                    <p class="my-1 border-t-2 border-black"></p>
+                    <p class="text-center">{{ $printing['footer'] ?: '' }}</p>
+                </div>
+            </div>
         </form>
     @elseif ($tab === 'money')
         <form wire:submit="saveMoney" class="card max-w-2xl p-5 sm:p-6">

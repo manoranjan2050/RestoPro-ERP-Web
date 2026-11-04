@@ -62,6 +62,10 @@ php .tools/composer.phar <cmd>       # composer is not installed globally
   FY label (`Billing::fyLabel()`, e.g. 2026-27) + /0001, unique per (fy, seq); held bills have no number; cancelled
   bills keep it. Payments map card/online → Cash Collection `online`. POS cart lines are addressed by `key`, not index
   (index-bound wire:model inputs showed the wrong qty after lines moved).
+- Printing: `App\Services\BillView::data($order)` feeds bills/receipt (58/80 mm via @page, browser print), bills/kot,
+  bills/pdf (dompdf A5, logo as data URI) and bills/public (/b/{token}, no login, NoIndex, works in Simple mode).
+  The POS auto-prints through hidden iframes inside `wire:ignore` (Livewire morph would strip a JS-set src).
+  Settings keys print_width/print_footer/print_logo/print_auto/print_kot. Silent printing = Chrome `--kiosk-printing`.
 - Business details live in Settings keys `business_*` (logo path = `business_logo` on the public disk, logos/).
   Use `<x-brand-mark />` for the logo-or-initial badge.
 

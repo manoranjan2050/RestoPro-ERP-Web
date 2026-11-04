@@ -4,10 +4,14 @@
     $foodDot = ['veg' => 'border-emerald-600 after:bg-emerald-600', 'egg' => 'border-amber-500 after:bg-amber-500', 'nonveg' => 'border-rose-600 after:bg-rose-600'];
     $qtyLabel = fn ($q) => rtrim(rtrim(number_format((float) $q, 3), '0'), '.');
 @endphp
-<div x-data="{ cartOpen: false }"
+<div x-data="{
+        cartOpen: false,
+        // Prints through a hidden frame on this page, so no pop-up window is needed.
+        printIn(frame, url) { const f = this.$refs[frame]; f.src = 'about:blank'; setTimeout(() => { f.src = url }, 30) },
+     }"
      @keydown.window.f2.prevent="$refs.search.focus()"
      @keydown.window.f8.prevent="$wire.openPay()"
-     @bill-saved.window="cartOpen = false"
+     @bill-saved.window="cartOpen = false; if ($event.detail.print) printIn('printer', $event.detail.print); if ($event.detail.kot) setTimeout(() => printIn('kot', $event.detail.kot), 1500)"
      class="lg:grid lg:h-[calc(100vh-6.5rem)] lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-5">
 
     {{-- ============ Items ============ --}}
@@ -279,11 +283,21 @@
                 <span class="mx-auto grid size-16 place-items-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15"><x-icon name="check" class="size-8" /></span>
                 <h2 class="mt-3 text-xl font-extrabold">Bill saved</h2>
                 <p class="text-sm text-slate-500">{{ $last->number }} · {{ money($last->total) }}</p>
-                <div class="mt-5 grid gap-2">
+                <div class="mt-5 grid grid-cols-2 gap-2">
+                    <button type="button" @click="printIn('printer', '{{ route('orders.print', $last) }}?auto=1')" class="btn-ghost justify-center">🖨️ Print</button>
+                    @if ($wa = \App\Services\BillView::whatsappUrl($last))
+                        <a href="{{ $wa }}" target="_blank" rel="noopener" class="btn-ghost justify-center text-emerald-600">WhatsApp</a>
+                    @endif
+                    <a href="{{ route('orders.pdf', $last) }}?view=1" target="_blank" class="btn-ghost justify-center">PDF</a>
                     <a href="{{ route('orders.show', $last) }}" wire:navigate class="btn-ghost justify-center">View bill</a>
-                    <button wire:click="dismissLast" autofocus class="btn-primary justify-center py-3">New bill</button>
+                    <button wire:click="dismissLast" autofocus class="btn-primary col-span-2 justify-center py-3">New bill</button>
                 </div>
             </div>
         </x-modal>
     @endif
+    {{-- Hidden frames used for printing (see printIn) --}}
+    <div wire:ignore>
+    <iframe x-ref="printer" title="Bill printer" class="pointer-events-none fixed -left-[9999px] top-0 h-[1px] w-[400px] opacity-0" aria-hidden="true" tabindex="-1"></iframe>
+    <iframe x-ref="kot" title="Kitchen printer" class="pointer-events-none fixed -left-[9999px] top-0 h-[1px] w-[400px] opacity-0" aria-hidden="true" tabindex="-1"></iframe>
+    </div>
 </div>

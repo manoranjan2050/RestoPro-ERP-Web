@@ -98,7 +98,15 @@
     </div>
 
     <div class="flex flex-wrap gap-2">
-        <span class="btn-ghost cursor-not-allowed opacity-60" title="Coming in the next update">Print · PDF · WhatsApp (next update)</span>
+        <a href="{{ route('orders.print', $o) }}" target="_blank" class="btn-primary">🖨️ Print receipt</a>
+        <a href="{{ route('orders.pdf', $o) }}?view=1" target="_blank" class="btn-ghost"><x-icon name="doc" class="size-4" /> PDF</a>
+        @if ($wa = \App\Services\BillView::whatsappUrl($o))
+            <a href="{{ $wa }}" target="_blank" rel="noopener" class="btn-ghost text-emerald-600"><x-icon name="whatsapp" class="size-4" /> WhatsApp</a>
+        @endif
+        <button type="button" x-data="{ ok: false }" @click="navigator.clipboard.writeText('{{ \App\Services\BillView::publicUrl($o) }}'); ok = true; setTimeout(() => ok = false, 1500)" class="btn-ghost">
+            <span x-text="ok ? 'Copied ✓' : 'Copy bill link'"></span>
+        </button>
+        <a href="{{ route('orders.kot', $o) }}" target="_blank" class="btn-ghost">KOT</a>
         @can('delete-records')
             @unless ($o->isCancelled())
                 <button wire:click="askCancel" class="btn ml-auto text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10">Cancel bill</button>

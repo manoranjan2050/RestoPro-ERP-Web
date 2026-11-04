@@ -39,6 +39,7 @@ class SettingsPage extends Component
     public bool $gst_enabled = false;
     public string $gst_inclusive = '1';
     public string $bill_prefix = '';
+    public array $printing = [];
     public bool $round_off = true;
     public string $max_discount = '100';
 
@@ -64,6 +65,7 @@ class SettingsPage extends Component
         }
         $this->gst_enabled = Setting::get('gst_enabled', '0') === '1';
         $this->bill_prefix = (string) Setting::get('bill_prefix', '');
+        $this->printing = \App\Services\BillView::printSettings();
         $this->round_off = Setting::get('pos_round_off', '1') === '1';
         $this->max_discount = (string) Setting::get('pos_max_discount', '100');
         $this->gst_inclusive = Setting::get('gst_inclusive', '1') === '1' ? '1' : '0';
@@ -93,6 +95,21 @@ class SettingsPage extends Component
         Setting::put('pos_round_off', $this->round_off ? '1' : '0');
         Setting::put('pos_max_discount', (string) (float) $this->max_discount);
         $this->dispatch('toast', message: 'Billing settings saved');
+    }
+
+    public function savePrinting(): void
+    {
+        Gate::authorize('manage-settings');
+        $this->validate([
+            'printing.width' => ['required', Rule::in(array_keys(\App\Services\BillView::WIDTHS))],
+            'printing.footer' => ['nullable', 'string', 'max:200'],
+        ], [], ['printing.footer' => 'footer']);
+        Setting::put('print_width', $this->printing['width']);
+        Setting::put('print_footer', trim((string) $this->printing['footer']));
+        foreach (['logo', 'auto', 'kot'] as $k) {
+            Setting::put('print_'.$k, ! empty($this->printing[$k]) ? '1' : '0');
+        }
+        $this->dispatch('toast', message: 'Printing settings saved');
     }
 
     public function saveGst(): void

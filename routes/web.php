@@ -30,6 +30,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/pos', \App\Livewire\Sales\Pos::class)->name('pos');
         Route::get('/orders', \App\Livewire\Sales\Orders::class)->name('orders');
         Route::get('/orders/{order}', \App\Livewire\Sales\OrderShow::class)->name('orders.show');
+        Route::get('/orders/{order}/print', [\App\Http\Controllers\BillController::class, 'receipt'])->name('orders.print');
+        Route::get('/orders/{order}/kot', [\App\Http\Controllers\BillController::class, 'kot'])->name('orders.kot');
+        Route::get('/orders/{order}/pdf', [\App\Http\Controllers\BillController::class, 'pdf'])->name('orders.pdf');
     });
 
     // v1 back office — owner + manager only.
@@ -81,6 +84,16 @@ Route::middleware('auth')->group(function () {
         return redirect()->route('login');
     })->name('logout');
 });
+
+// Customer's bill: no login, unguessable token. Works in Simple mode too, so links already sent never break.
+Route::get('/b/{token}', [\App\Http\Controllers\BillController::class, 'publicShow'])
+    ->where('token', '[A-Za-z0-9]{20,64}')
+    ->middleware(['throttle:60,1', \App\Http\Middleware\NoIndex::class])
+    ->name('bill.public');
+Route::get('/b/{token}/pdf', [\App\Http\Controllers\BillController::class, 'publicPdf'])
+    ->where('token', '[A-Za-z0-9]{20,64}')
+    ->middleware(['throttle:30,1', \App\Http\Middleware\NoIndex::class])
+    ->name('bill.public.pdf');
 
 // Public read-only staff statement — no login. Token is unguessable; optional PIN inside.
 Route::get('/s/{token}', \App\Livewire\StaffShare::class)
