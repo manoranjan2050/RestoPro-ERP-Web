@@ -120,6 +120,33 @@
             <p class="text-xs text-slate-500">Switching back to Simple keeps every item, customer and bill. In Advanced mode, bills paid at the counter are added to that day's Cash Collection automatically, so all v1 reports include them.</p>
             <div class="flex justify-end"><button class="btn-primary" wire:loading.attr="disabled" wire:target="saveMode">Save</button></div>
         </form>
+
+        @if ($mode === 'advanced')
+            <form wire:submit="saveBilling" class="card mt-6 p-5 sm:p-6">
+                <h3 class="text-base font-bold">Billing</h3>
+                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Bill numbers restart every financial year: <b>{{ $bill_prefix ?: '' }}{{ \App\Services\Billing::fyLabel() }}/0001</b>, /0002 …</p>
+                <div class="mt-4 grid gap-4 sm:grid-cols-3">
+                    <div>
+                        <label class="label" for="bp">Bill number prefix <span class="font-normal text-slate-400">(optional)</span></label>
+                        <input id="bp" wire:model.live.debounce.400ms="bill_prefix" class="input uppercase" maxlength="8" placeholder="SG/">
+                        @error('bill_prefix') <p class="error">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="label" for="md">Max discount for managers & cashiers</label>
+                        <div class="relative">
+                            <input id="md" wire:model="max_discount" type="number" min="0" max="100" step="0.5" class="input pr-8">
+                            <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-slate-400">%</span>
+                        </div>
+                        @error('max_discount') <p class="error">{{ $message }}</p> @enderror
+                        <p class="mt-1 text-xs text-slate-500">Owners can always give any discount.</p>
+                    </div>
+                    <label class="flex items-center gap-2 self-center text-sm">
+                        <input type="checkbox" wire:model="round_off" class="size-4 rounded border-slate-300 text-brand-500"> Round bill totals to the rupee
+                    </label>
+                </div>
+                <div class="mt-5 flex justify-end"><button class="btn-primary" wire:loading.attr="disabled" wire:target="saveBilling">Save</button></div>
+            </form>
+        @endif
     @elseif ($tab === 'gst')
         <form wire:submit="saveGst" class="card max-w-2xl space-y-5 p-5 sm:p-6">
             <div>

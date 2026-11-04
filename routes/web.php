@@ -25,6 +25,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/customers', \App\Livewire\Sales\Customers::class)->name('customers');
     });
 
+    // v2 counter — open to cashiers too.
+    Route::middleware('advanced')->group(function () {
+        Route::get('/pos', \App\Livewire\Sales\Pos::class)->name('pos');
+        Route::get('/orders', \App\Livewire\Sales\Orders::class)->name('orders');
+        Route::get('/orders/{order}', \App\Livewire\Sales\OrderShow::class)->name('orders.show');
+    });
+
     // v1 back office — owner + manager only.
     Route::middleware('can:back-office')->group(function () {
     Route::get('/collections', \App\Livewire\Collections::class)->name('collections');

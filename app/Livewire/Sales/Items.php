@@ -203,6 +203,13 @@ class Items extends Component
     {
         Gate::authorize('delete-records');
         $item = Item::findOrFail($this->confirmingDelete);
+        if ($sold = \App\Models\OrderItem::where('item_id', $item->id)->count()) {
+            $this->confirmingDelete = null;
+            $this->dispatch('toast', message: "“{$item->name}” is on {$sold} bill line(s) — hidden from the POS instead of deleted");
+            $item->update(['is_active' => false]);
+
+            return;
+        }
         if ($item->photo_path) {
             Storage::disk('public')->delete($item->photo_path);
         }

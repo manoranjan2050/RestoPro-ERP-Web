@@ -57,6 +57,11 @@ php .tools/composer.phar <cmd>       # composer is not installed globally
 - Day sales: `cash_collections.cash/upi/online` are DAY TOTALS (all v1 reports read them); `pos_*` is the part from bills.
   Never write those columns directly from POS code — call `App\Services\DaySales::setPos($date, [...])`. The Cash
   Collection page edits only the hand-entered share (`fillManual`), and delete keeps the bill share (`deleteManual`).
+- Bills: `App\Services\Billing` (save/hold/cancel/syncDay) + `BillCalculator` (GST incl/excl, proportional discount,
+  CGST/SGST split, round-off). Prices are re-read from items on save — never trust the screen. Bill no. = bill_prefix +
+  FY label (`Billing::fyLabel()`, e.g. 2026-27) + /0001, unique per (fy, seq); held bills have no number; cancelled
+  bills keep it. Payments map card/online → Cash Collection `online`. POS cart lines are addressed by `key`, not index
+  (index-bound wire:model inputs showed the wrong qty after lines moved).
 - Business details live in Settings keys `business_*` (logo path = `business_logo` on the public disk, logos/).
   Use `<x-brand-mark />` for the logo-or-initial badge.
 

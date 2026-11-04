@@ -38,6 +38,9 @@ class SettingsPage extends Component
     public array $features = [];
     public bool $gst_enabled = false;
     public string $gst_inclusive = '1';
+    public string $bill_prefix = '';
+    public bool $round_off = true;
+    public string $max_discount = '100';
 
     public string $currency_symbol = '₹';
     public string $fy_start_month = '4';
@@ -60,6 +63,9 @@ class SettingsPage extends Component
             $this->features[$f] = Setting::get('sales_'.$f, '1') === '1';
         }
         $this->gst_enabled = Setting::get('gst_enabled', '0') === '1';
+        $this->bill_prefix = (string) Setting::get('bill_prefix', '');
+        $this->round_off = Setting::get('pos_round_off', '1') === '1';
+        $this->max_discount = (string) Setting::get('pos_max_discount', '100');
         $this->gst_inclusive = Setting::get('gst_inclusive', '1') === '1' ? '1' : '0';
     }
 
@@ -73,6 +79,20 @@ class SettingsPage extends Component
         }
         $this->dispatch('toast', message: $this->mode === 'advanced' ? 'Advanced mode on — the Sales menu is now in the sidebar' : 'Simple mode on');
         $this->redirectRoute('settings', ['tab' => 'mode'], navigate: true); // rebuild the sidebar
+    }
+
+    public function saveBilling(): void
+    {
+        Gate::authorize('manage-settings');
+        $this->bill_prefix = mb_strtoupper(trim($this->bill_prefix));
+        $this->validate([
+            'bill_prefix' => ['nullable', 'regex:/^[A-Z0-9\/-]{0,8}$/'],
+            'max_discount' => ['required', 'numeric', 'between:0,100'],
+        ], ['bill_prefix.regex' => 'Up to 8 letters/numbers, e.g. SG/ or MB-.'], ['max_discount' => 'discount limit']);
+        Setting::put('bill_prefix', $this->bill_prefix !== '' ? $this->bill_prefix : null);
+        Setting::put('pos_round_off', $this->round_off ? '1' : '0');
+        Setting::put('pos_max_discount', (string) (float) $this->max_discount);
+        $this->dispatch('toast', message: 'Billing settings saved');
     }
 
     public function saveGst(): void

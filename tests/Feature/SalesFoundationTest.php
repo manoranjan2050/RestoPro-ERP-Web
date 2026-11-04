@@ -83,7 +83,7 @@ class SalesFoundationTest extends TestCase
         foreach (['/collections', '/expenses', '/staff', '/reports', '/items', '/customers', '/ledger'] as $url) {
             $this->get($url)->assertForbidden();
         }
-        $this->get('/')->assertRedirect(route('profile'));
+        $this->get('/')->assertRedirect(route('pos'));
         $this->get('/profile')->assertOk()->assertDontSee(route('expenses'));
 
         $token = $cashier->createToken('t')->plainTextToken;
