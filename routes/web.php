@@ -22,6 +22,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/items/template.csv', fn () => response(\App\Services\ItemImport::template(), 200, [
             'Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => 'attachment; filename="items-template.csv"',
         ]))->name('items.template');
+        Route::get('/stock', \App\Livewire\Sales\StockPage::class)->name('stock');
         Route::get('/customers', \App\Livewire\Sales\Customers::class)->name('customers');
     });
 

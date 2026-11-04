@@ -333,6 +333,7 @@ class Pos extends Component
             'priced' => $priced,
             'live' => $live,
             'gst' => Sales::gst(),
+            'stockOn' => Sales::on('stock'),
             'types' => $this->types(),
             'tables' => $this->type === 'dine_in' ? DiningTable::where('is_active', true)->with('openOrder')->orderBy('area')->orderBy('sort')->orderBy('name')->get() : collect(),
             'current' => $current,

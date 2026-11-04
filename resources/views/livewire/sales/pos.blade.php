@@ -74,6 +74,10 @@
                                 </span>
                                 <span class="mt-auto pt-1 text-sm font-bold text-brand-600 dark:text-brand-400">{{ $item->priceLabel() }}</span>
                                 @if ($item->variants->isNotEmpty())<span class="text-[11px] text-slate-500">{{ $item->variants->count() }} sizes</span>@endif
+                                @if ($stockOn && $item->track_stock)
+                                    @php $left = $item->stockOnHand(); @endphp
+                                    <span @class(['text-[11px] font-semibold', 'text-rose-600' => $left <= 0, 'text-amber-600' => $left > 0 && $item->isLowStock(), 'text-emerald-600' => $left > 0 && ! $item->isLowStock()])>{{ $left <= 0 ? 'Out of stock' : $qtyLabel($left).' left' }}</span>
+                                @endif
                             </span>
                         </button>
                     @endforeach
@@ -265,6 +269,7 @@
                     <button wire:key="pv-{{ $v->id }}" wire:click="add({{ $picking->id }}, {{ $v->id }})" class="rounded-2xl p-4 text-left ring-1 ring-slate-200 transition hover:bg-brand-50 hover:ring-brand-400 dark:ring-slate-700 dark:hover:bg-brand-500/10">
                         <span class="block font-bold">{{ $v->name }}</span>
                         <span class="block text-lg font-extrabold text-brand-600 dark:text-brand-400">{{ money($v->price) }}</span>
+                        @if ($stockOn && $picking->track_stock)<span @class(['block text-xs font-semibold', 'text-rose-600' => (float) $v->stock_qty <= 0, 'text-slate-500' => (float) $v->stock_qty > 0])>{{ (float) $v->stock_qty <= 0 ? 'Out of stock' : $qtyLabel($v->stock_qty).' left' }}</span>@endif
                     </button>
                 @endforeach
             </div>

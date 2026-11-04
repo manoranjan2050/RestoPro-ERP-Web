@@ -235,6 +235,7 @@ class Billing
             if ($pays) {
                 self::syncDay(today());
             }
+            Stock::syncOrder($order->fresh('items'), $by);
 
             return $order->fresh(['items', 'payments']);
         });
@@ -294,6 +295,7 @@ class Billing
             foreach ($order->payments()->pluck('date')->unique() as $d) {
                 self::syncDay($d);
             }
+            Stock::syncOrder($order->fresh('items'), $by); // put the stock back
 
             return $order;
         });
