@@ -34,6 +34,72 @@
         @endforeach
     </div>
 
+    {{-- Counter today (Advanced mode) --}}
+    @if ($pos)
+        <div class="grid gap-6 lg:grid-cols-3">
+            <div class="card p-5">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-bold">Counter today</h3>
+                    <a href="{{ route('pos') }}" wire:navigate class="text-sm font-semibold text-brand-600 hover:underline">Open POS →</a>
+                </div>
+                <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50"><p class="text-slate-500">Bills</p><p class="text-xl font-extrabold tabular-nums">{{ $pos['bills'] }}</p></div>
+                    <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50"><p class="text-slate-500">Average bill</p><p class="text-xl font-extrabold tabular-nums">{{ money($pos['avg']) }}</p></div>
+                    @if ($pos['tables'] !== null)<a href="{{ route('tables') }}" wire:navigate class="rounded-xl bg-orange-50 p-3 hover:ring-1 hover:ring-orange-300 dark:bg-orange-500/10"><p class="text-slate-500">Tables running</p><p class="text-xl font-extrabold tabular-nums text-orange-600">{{ $pos['tables'] }}</p></a>@endif
+                    @if ($pos['deliveries'] !== null)<a href="{{ route('orders', ['tab' => 'delivery']) }}" wire:navigate class="rounded-xl bg-sky-50 p-3 hover:ring-1 hover:ring-sky-300 dark:bg-sky-500/10"><p class="text-slate-500">Deliveries open</p><p class="text-xl font-extrabold tabular-nums text-sky-600">{{ $pos['deliveries'] }}</p></a>@endif
+                </div>
+                <a href="{{ route('reports', ['type' => 'day_end']) }}" wire:navigate class="btn-ghost mt-4 w-full justify-center">Day-end report</a>
+            </div>
+
+            <div class="card p-5">
+                <h3 class="font-bold">Top items today</h3>
+                <ul class="mt-3 space-y-2">
+                    @forelse ($pos['top'] as $i => $t)
+                        <li class="flex items-center gap-3 text-sm">
+                            <span class="grid size-6 shrink-0 place-items-center rounded-full bg-brand-50 text-xs font-bold text-brand-600 dark:bg-brand-500/10">{{ $i + 1 }}</span>
+                            <span class="min-w-0 flex-1 truncate">{{ $t->name }}{{ $t->variant_name ? ' · '.$t->variant_name : '' }} <span class="text-xs text-slate-400">× {{ rtrim(rtrim(number_format((float) $t->qty, 3), '0'), '.') }}</span></span>
+                            <span class="font-semibold tabular-nums">{{ money($t->net) }}</span>
+                        </li>
+                    @empty
+                        <li class="py-6 text-center text-sm text-slate-500">No bills yet today.</li>
+                    @endforelse
+                </ul>
+            </div>
+
+            <div class="card p-5">
+                @if ($pos['advance']->isNotEmpty())
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold">Advance orders due</h3>
+                        <a href="{{ route('orders', ['tab' => 'advance']) }}" wire:navigate class="text-sm font-semibold text-brand-600 hover:underline">All →</a>
+                    </div>
+                    <ul class="mt-3 space-y-2">
+                        @foreach ($pos['advance'] as $o)
+                            <li class="text-sm">
+                                <span @class(['font-semibold', 'text-rose-600' => $o->due_at?->isPast()])>{{ $o->due_at?->isToday() ? 'Today' : ($o->due_at?->isTomorrow() ? 'Tomorrow' : $o->due_at?->format('d M')) }} {{ $o->due_at?->format('h:i A') }}</span>
+                                · {{ $o->customer_name }} <span class="text-xs text-slate-500">· balance {{ money($o->balance()) }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+                @if ($pos['low']->isNotEmpty())
+                    <div @class(['flex items-center justify-between', 'mt-5' => $pos['advance']->isNotEmpty()])>
+                        <h3 class="font-bold">Low stock</h3>
+                        <a href="{{ route('stock', ['lowOnly' => 1]) }}" wire:navigate class="text-sm font-semibold text-brand-600 hover:underline">Stock →</a>
+                    </div>
+                    <ul class="mt-3 space-y-1.5">
+                        @foreach ($pos['low'] as $r)
+                            <li class="flex justify-between text-sm"><span class="truncate">{{ $r['label'] }}</span><span @class(['font-semibold tabular-nums', 'text-rose-600' => $r['qty'] <= 0, 'text-amber-600' => $r['qty'] > 0])>{{ rtrim(rtrim(number_format($r['qty'], 3), '0'), '.') }}</span></li>
+                        @endforeach
+                    </ul>
+                @endif
+                @if ($pos['advance']->isEmpty() && $pos['low']->isEmpty())
+                    <h3 class="font-bold">All clear</h3>
+                    <p class="mt-3 text-sm text-slate-500">No advance orders due in the next two days and nothing low on stock.</p>
+                @endif
+            </div>
+        </div>
+    @endif
+
     {{-- Charts --}}
     <div class="grid gap-6 lg:grid-cols-3">
         <div class="card p-5 lg:col-span-2">

@@ -23,6 +23,8 @@ class Reports extends Component
     public string $from = '';
     #[Url]
     public string $to = '';
+    #[Url(as: 'd')]
+    public string $date = '';
 
     public function mount(): void
     {
@@ -32,6 +34,12 @@ class Reports extends Component
     public function updated(): void
     {
         $this->sanitise();
+    }
+
+    public function shiftDay(int $d): void
+    {
+        $next = Carbon::parse($this->date)->addDays($d);
+        $this->date = $next->isFuture() ? today()->toDateString() : $next->toDateString();
     }
 
     public function shiftMonth(int $d): void
@@ -50,10 +58,11 @@ class Reports extends Component
     /** Parameters for the current report (also used for the PDF/Excel links). */
     public function params(): array
     {
-        return match (ReportBuilder::TYPES[$this->type][2]) {
+        return match (ReportBuilder::types()[$this->type][2]) {
             'month' => ['month' => $this->month],
             'fy' => ['fy' => $this->fy],
             'range' => ['from' => min($this->from, $this->to), 'to' => max($this->from, $this->to)],
+            'day' => ['date' => $this->date],
             default => [],
         };
     }
@@ -65,7 +74,7 @@ class Reports extends Component
         return view('livewire.reports', [
             'report' => ReportBuilder::build($this->type, $params),
             'params' => $params,
-            'types' => ReportBuilder::TYPES,
+            'types' => ReportBuilder::types(),
             'years' => $this->years(),
         ]);
     }
@@ -89,7 +98,7 @@ class Reports extends Component
 
     private function sanitise(): void
     {
-        if (! array_key_exists($this->type, ReportBuilder::TYPES)) {
+        if (! array_key_exists($this->type, ReportBuilder::types())) {
             $this->type = 'monthly';
         }
         if (! preg_match('/^\d{4}-\d{2}$/', $this->month) || $this->month > now()->format('Y-m')) {
@@ -100,6 +109,9 @@ class Reports extends Component
             $this->fy = array_key_first($years);
         }
         $ok = fn ($d) => preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) && strtotime($d);
+        if (! $ok($this->date) || $this->date > today()->toDateString()) {
+            $this->date = today()->toDateString();
+        }
         if (! $ok($this->from) || ! $ok($this->to)) {
             $this->range('month');
         }

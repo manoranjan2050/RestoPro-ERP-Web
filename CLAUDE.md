@@ -71,6 +71,10 @@ php .tools/composer.phar <cmd>       # composer is not installed globally
   item_variants.stock_qty (items with sizes are stocked per size). Billing calls `Stock::syncOrder()` after every save and
   cancel: open/completed orders use stock, held/cancelled don't, and it diffs against what the order already took
   (idempotent). Selling below zero is allowed on purpose. Only active when Sales::on('stock').
+- Reports v2: `App\Services\SalesReports` (day_end · item_sales · hourly · gst_summary · bills), same array shape as
+  ReportBuilder. Always list report types with `ReportBuilder::types()` (adds the v2 ones only in Advanced mode); kind
+  `day` takes ?date=. Sales = completed bills by billed_at; "collected" = order_payments by payment date (incl. advances).
+  Day-end thermal print: route reports.day-end.print → bills/report-thermal.
 - Printing: `App\Services\BillView::data($order)` feeds bills/receipt (58/80 mm via @page, browser print), bills/kot,
   bills/pdf (dompdf A5, logo as data URI) and bills/public (/b/{token}, no login, NoIndex, works in Simple mode).
   The POS auto-prints through hidden iframes inside `wire:ignore` (Livewire morph would strip a JS-set src).

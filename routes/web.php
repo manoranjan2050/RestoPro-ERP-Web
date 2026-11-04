@@ -56,6 +56,17 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/reports', \App\Livewire\Reports::class)->name('reports');
     Route::get('/analytics', \App\Livewire\AnnualSummary::class)->name('analytics');
+    // Day-end (Z) report on the receipt printer.
+    Route::get('/reports/day-end/print', function (Request $request) {
+        abort_unless(\App\Support\Sales::advanced(), 404);
+        $d = $request->validate(['date' => ['required', 'date_format:Y-m-d']])['date'];
+
+        return view('bills.report-thermal', [
+            'report' => \App\Services\SalesReports::dayEnd($d),
+            'business' => (string) \App\Models\Setting::get('business_name'),
+            'print' => \App\Services\BillView::printSettings(),
+        ]);
+    })->name('reports.day-end.print');
 
     Route::get('/backup', \App\Livewire\BackupPage::class)->name('backup');
     Route::get('/settings', \App\Livewire\SettingsPage::class)->name('settings');

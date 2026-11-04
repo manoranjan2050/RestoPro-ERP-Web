@@ -32,8 +32,18 @@ class ReportBuilder
         'salary' => ['Salary sheet', 'Attendance, earnings and payments for every staff member', 'month'],
     ];
 
+    /** v1 reports, plus the POS reports in Advanced mode. */
+    public static function types(): array
+    {
+        return self::TYPES + (\App\Support\Sales::advanced() ? SalesReports::TYPES : []);
+    }
+
     public static function build(string $type, array $p): array
     {
+        if (array_key_exists($type, SalesReports::TYPES)) {
+            return SalesReports::build($type, $p);
+        }
+
         return match ($type) {
             'monthly' => self::monthly($p['month']),
             'yearly' => self::yearly((int) $p['fy']),

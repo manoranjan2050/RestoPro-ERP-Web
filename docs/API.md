@@ -93,7 +93,7 @@ Expense fields: `amount`, `paid_at_purchase`, `paid_total` (incl. vendor khata p
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/ledger?from=&to=&source=&account=&direction=` | master ledger: `opening, closing, summary, accounts{cash,bank,online}, data[]` |
-| GET | `/reports/{type}` | `monthly?month=` · `yearly?fy=` · `sales?from&to` · `expenses?from&to` · `vendor_dues` · `salary?month=` → `{title, subtitle, kpis, sections, notes, downloads{pdf,xlsx}}` |
+| GET | `/reports/{type}` | `monthly?month=` · `yearly?fy=` · `sales?from&to` · `expenses?from&to` · `vendor_dues` · `salary?month=` · Advanced mode also: `day_end?date=` · `item_sales` · `hourly` · `gst_summary` · `bills` (all `?from&to`) → `{title, subtitle, kpis, sections, notes, downloads{pdf,xlsx}}` |
 | GET | `/reports/{type}.pdf` / `.xlsx` | same params; file download |
 | GET | `/analytics?fy=` | annual summary: months, totals, compare, mom, cumulative, weekday, categories, best/worst days, insights |
 | GET / POST | `/backups` | owner only; POST = back up now (restore is website-only on purpose) |

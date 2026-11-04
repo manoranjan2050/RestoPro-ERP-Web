@@ -52,6 +52,36 @@ class Dashboard extends Component
                 'hint' => $month['total'] > 0 ? 'Margin '.round($profit / $month['total'] * 100).'% · sales − expenses' : 'Sales − expenses'],
         ];
 
-        return view('livewire.dashboard', compact('stats', 'trend', 'recent', 'today', 'month', 'byCategory', 'allDue'));
+        return view('livewire.dashboard', compact('stats', 'trend', 'recent', 'today', 'month', 'byCategory', 'allDue') + ['pos' => $this->posWidgets()]);
+    }
+
+    /** Advanced mode: what's happening at the counter today. Null in Simple mode. */
+    private function posWidgets(): ?array
+    {
+        if (! \App\Support\Sales::advanced()) {
+            return null;
+        }
+        $bills = \App\Models\Order::where('status', 'completed')->whereDate('billed_at', today());
+        $count = (clone $bills)->count();
+        $sum = (float) (clone $bills)->sum('total');
+        $top = \App\Models\OrderItem::query()->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->where('orders.status', 'completed')->whereDate('orders.billed_at', today())
+            ->groupBy('order_items.name', 'order_items.variant_name')
+            ->selectRaw('order_items.name, order_items.variant_name, SUM(order_items.qty) as qty, SUM(order_items.total) as net')
+            ->orderByDesc('net')->limit(5)->get();
+        $advance = \App\Support\Sales::on('advance')
+            ? \App\Models\Order::where('type', 'advance')->whereIn('status', ['open', 'completed'])->where('stage', '!=', 'delivered')
+                ->where('due_at', '<', today()->addDays(2))->orderBy('due_at')->limit(6)->get()
+            : collect();
+
+        return [
+            'bills' => $count, 'sales' => $sum, 'avg' => $count ? $sum / $count : 0,
+            'tables' => \App\Support\Sales::on('tables') ? \App\Models\Order::where('type', 'dine_in')->where('status', 'open')->count() : null,
+            'deliveries' => \App\Support\Sales::on('delivery') ? \App\Models\Order::where('type', 'delivery')->where('status', '!=', 'cancelled')
+                ->where(fn ($q) => $q->where('stage', '!=', 'delivered')->orWhere('status', 'open'))->count() : null,
+            'top' => $top,
+            'advance' => $advance,
+            'low' => \App\Support\Sales::on('stock') ? collect(\App\Services\Stock::rows())->filter(fn ($r) => $r['active'] && ($r['low'] || $r['qty'] <= 0))->take(6)->values() : collect(),
+        ];
     }
 }

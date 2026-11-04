@@ -1,5 +1,6 @@
 @php
-    $icons = ['monthly' => 'chart', 'yearly' => 'trending', 'sales' => 'cash', 'expenses' => 'receipt', 'vendor_dues' => 'truck', 'salary' => 'users'];
+    $icons = ['monthly' => 'chart', 'yearly' => 'trending', 'sales' => 'cash', 'expenses' => 'receipt', 'vendor_dues' => 'truck', 'salary' => 'users',
+        'day_end' => 'clipboard', 'item_sales' => 'tag', 'hourly' => 'trending', 'gst_summary' => 'doc', 'bills' => 'receipt'];
     $kind = $types[$type][2];
 @endphp
 <div class="space-y-6">
@@ -12,7 +13,7 @@
             ])>
                 <span @class(['grid size-9 place-items-center rounded-xl',
                               'bg-gradient-to-br from-brand-500 to-rose-500 text-white shadow-md shadow-brand-500/25' => $type === $k,
-                              'bg-slate-100 text-slate-500 dark:bg-slate-800' => $type !== $k])><x-icon :name="$icons[$k]" class="size-4" /></span>
+                              'bg-slate-100 text-slate-500 dark:bg-slate-800' => $type !== $k])><x-icon :name="$icons[$k] ?? 'doc'" class="size-4" /></span>
                 <span class="text-sm font-bold">{{ $label }}</span>
                 <span class="text-xs text-slate-500">{{ $desc }}</span>
             </button>
@@ -28,6 +29,15 @@
                     <button wire:click="shiftMonth(-1)" class="rounded-lg px-2.5 py-1 hover:bg-slate-100 dark:hover:bg-slate-700" aria-label="Previous month">‹</button>
                     <input type="month" wire:model.live="month" max="{{ now()->format('Y-m') }}" class="w-40 border-0 bg-transparent py-1 text-center text-sm font-semibold focus:ring-0 dark:[color-scheme:dark]">
                     <button wire:click="shiftMonth(1)" @disabled($month >= now()->format('Y-m')) class="rounded-lg px-2.5 py-1 hover:bg-slate-100 disabled:opacity-30 dark:hover:bg-slate-700" aria-label="Next month">›</button>
+                </div>
+            </div>
+        @elseif ($kind === 'day')
+            <div>
+                <span class="label">Day</span>
+                <div class="flex items-center rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-800">
+                    <button wire:click="shiftDay(-1)" class="rounded-lg px-2.5 py-1 hover:bg-slate-100 dark:hover:bg-slate-700" aria-label="Previous day">‹</button>
+                    <input type="date" wire:model.live="date" max="{{ today()->toDateString() }}" class="w-40 border-0 bg-transparent py-1 text-center text-sm font-semibold focus:ring-0 dark:[color-scheme:dark]">
+                    <button wire:click="shiftDay(1)" @disabled($date >= today()->toDateString()) class="rounded-lg px-2.5 py-1 hover:bg-slate-100 disabled:opacity-30 dark:hover:bg-slate-700" aria-label="Next day">›</button>
                 </div>
             </div>
         @elseif ($kind === 'fy')
@@ -52,6 +62,9 @@
         @endif
 
         <div class="flex w-full gap-2 sm:ml-auto sm:w-auto">
+            @if ($type === 'day_end')
+                <a href="{{ route('reports.day-end.print', $params) }}" target="_blank" class="btn-ghost flex-1 sm:flex-none">🖨️ Thermal</a>
+            @endif
             <a href="{{ route('reports.download', ['type' => $type, 'format' => 'pdf', 'view' => 1] + $params) }}" target="_blank" class="btn-ghost flex-1 sm:flex-none"><x-icon name="eye" class="size-4" /> View / print</a>
             <a href="{{ route('reports.download', ['type' => $type, 'format' => 'pdf'] + $params) }}" class="btn-primary flex-1 sm:flex-none"><x-icon name="doc" class="size-4" /> PDF</a>
             <a href="{{ route('reports.download', ['type' => $type, 'format' => 'xlsx'] + $params) }}" class="btn-ghost flex-1 sm:flex-none"><x-icon name="chart" class="size-4" /> Excel</a>

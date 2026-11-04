@@ -42,11 +42,12 @@ class InsightsController extends Controller
     /** GET /reports/{type}?month=|fy=|from=&to= — the same data the PDF/Excel use. */
     public function report(Request $request, string $type)
     {
-        abort_unless(array_key_exists($type, ReportBuilder::TYPES), 404);
-        $p = $request->validate(match (ReportBuilder::TYPES[$type][2]) {
+        abort_unless(array_key_exists($type, ReportBuilder::types()), 404);
+        $p = $request->validate(match (ReportBuilder::types()[$type][2]) {
             'month' => ['month' => ['required', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/']],
             'fy' => ['fy' => ['required', 'integer', 'between:2000,2100']],
             'range' => ['from' => ['required', 'date_format:Y-m-d'], 'to' => ['required', 'date_format:Y-m-d', 'after_or_equal:from']],
+            'day' => ['date' => ['required', 'date_format:Y-m-d']],
             default => [],
         });
         $report = ReportBuilder::build($type, $p);
