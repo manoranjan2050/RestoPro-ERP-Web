@@ -12,7 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias(['advanced' => \App\Http\Middleware\AdvancedMode::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // The Android app always gets JSON errors (401/403/404/422…), never HTML or redirects.

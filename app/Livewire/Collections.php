@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\CashCollection;
+use App\Services\DaySales;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -26,6 +27,8 @@ class Collections extends Component
     public $online = '';
     public string $note = '';
     public ?int $duplicateId = null;
+    /** Bill (POS) share of the day being edited — read-only here. */
+    public array $pos = ['cash' => 0, 'upi' => 0, 'online' => 0];
 
     public ?int $confirmingDelete = null;
 
@@ -62,9 +65,11 @@ class Collections extends Component
         $this->resetForm();
         $this->editingId = $c->id;
         $this->date = $c->date->toDateString();
-        $this->cash = $this->plain($c->cash);
-        $this->upi = $this->plain($c->upi);
-        $this->online = $this->plain($c->online);
+        $manual = DaySales::manual($c);
+        $this->pos = DaySales::pos($c);
+        $this->cash = $this->plain($manual['cash']);
+        $this->upi = $this->plain($manual['upi']);
+        $this->online = $this->plain($manual['online']);
         $this->note = (string) $c->note;
         $this->showForm = true;
     }
@@ -97,7 +102,9 @@ class Collections extends Component
         $data['updated_by'] = Auth::id();
 
         if ($this->editingId) {
-            CashCollection::findOrFail($this->editingId)->update($data);
+            // The form edits only the hand-entered share; bill payments stay on top.
+            $row = CashCollection::findOrFail($this->editingId);
+            DaySales::fillManual($row->fill(collect($data)->except(['cash', 'upi', 'online'])->all()), $data)->save();
             $msg = 'Collection updated';
         } else {
             CashCollection::create($data + ['created_by' => Auth::id()]);
@@ -126,7 +133,9 @@ class Collections extends Component
     public function delete(): void
     {
         Gate::authorize('delete-records');
-        CashCollection::whereKey($this->confirmingDelete)->delete();
+        if ($row = CashCollection::find($this->confirmingDelete)) {
+            DaySales::deleteManual($row);
+        }
         $this->confirmingDelete = null;
         $this->dispatch('toast', message: 'Entry deleted');
     }
@@ -167,7 +176,8 @@ class Collections extends Component
             'missing' => array_reverse($missing),
             'monthLabel' => $start->format('F Y'),
             'isCurrentMonth' => $start->isSameMonth(now()),
-            'formTotal' => (float) $this->cash + (float) $this->upi + (float) $this->online,
+            'formTotal' => (float) $this->cash + (float) $this->upi + (float) $this->online + array_sum($this->pos),
+            'posTotal' => array_sum($this->pos),
         ]);
     }
 
@@ -190,7 +200,7 @@ class Collections extends Component
 
     private function resetForm(): void
     {
-        $this->reset('editingId', 'date', 'cash', 'upi', 'online', 'note', 'duplicateId');
+        $this->reset('editingId', 'date', 'cash', 'upi', 'online', 'note', 'duplicateId', 'pos');
         $this->resetValidation();
     }
 

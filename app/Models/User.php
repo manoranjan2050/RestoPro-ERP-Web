@@ -15,6 +15,13 @@ class User extends Authenticatable
 
     public const ROLE_OWNER = 'owner';
     public const ROLE_MANAGER = 'manager';
+    public const ROLE_CASHIER = 'cashier'; // v2: POS + orders only
+
+    public const ROLES = [
+        self::ROLE_OWNER => 'Owner — everything',
+        self::ROLE_MANAGER => 'Manager — enter & edit, no delete/backup/settings',
+        self::ROLE_CASHIER => 'Cashier — sales counter only (Advanced mode)',
+    ];
 
     protected $fillable = [
         'name', 'username', 'email', 'mobile', 'photo_path', 'role', 'is_active', 'password', 'last_login_at',
@@ -30,6 +37,21 @@ class User extends Authenticatable
             'is_active' => 'boolean',
             'password' => 'hashed',
         ];
+    }
+
+    public function isCashier(): bool
+    {
+        return $this->role === self::ROLE_CASHIER;
+    }
+
+    /** Where this user lands after sign-in. */
+    public function homeRoute(): string
+    {
+        if ($this->isCashier()) {
+            return \App\Support\Sales::advanced() && \Illuminate\Support\Facades\Route::has('pos') ? 'pos' : 'profile';
+        }
+
+        return 'dashboard';
     }
 
     public function isOwner(): bool

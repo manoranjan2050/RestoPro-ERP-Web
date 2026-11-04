@@ -16,6 +16,17 @@ Route::middleware('auth')->group(function () {
     Route::get('/', Dashboard::class)->name('dashboard');
     Route::get('/profile', Profile::class)->name('profile');
 
+    // v2 sales (Advanced mode). Items + customers are back-office; the POS (Phase 15) is open to cashiers too.
+    Route::middleware(['advanced', 'can:back-office'])->group(function () {
+        Route::get('/items', \App\Livewire\Sales\Items::class)->name('items');
+        Route::get('/items/template.csv', fn () => response(\App\Services\ItemImport::template(), 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => 'attachment; filename="items-template.csv"',
+        ]))->name('items.template');
+        Route::get('/customers', \App\Livewire\Sales\Customers::class)->name('customers');
+    });
+
+    // v1 back office — owner + manager only.
+    Route::middleware('can:back-office')->group(function () {
     Route::get('/collections', \App\Livewire\Collections::class)->name('collections');
     Route::get('/revenue', \App\Livewire\RevenueLog::class)->name('revenue');
     Route::get('/revenue/export', \App\Http\Controllers\RevenueExportController::class)->name('revenue.export');
@@ -53,6 +64,7 @@ Route::middleware('auth')->group(function () {
             'Cache-Control' => 'private, max-age=3600',
         ]);
     })->name('expenses.bill');
+    });
 
     Route::post('/logout', function (Request $request) {
         Auth::logout();
@@ -74,7 +86,7 @@ Route::get('/s/{token}', \App\Livewire\StaffShare::class)
  * Avoids relying on `storage:link`, which can be blocked on shared hosting / Windows.
  */
 Route::get('/media/{path}', function (string $path) {
-    abort_unless(preg_match('#^(avatars|logos|staff)/[A-Za-z0-9._-]+$#', $path), 404);
+    abort_unless(preg_match('#^(avatars|logos|staff|items)/[A-Za-z0-9._-]+$#', $path), 404);
     abort_unless(Storage::disk('public')->exists($path), 404);
 
     return Storage::disk('public')->response($path, null, [

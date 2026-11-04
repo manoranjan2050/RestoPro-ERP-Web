@@ -25,6 +25,10 @@ Base URL: `https://<domain>/api/v1` (local: `http://127.0.0.1:8090/api/v1`)
 
 `user.can.delete` / `user.can.backups` tell the app which buttons to show (owner only).
 
+**v2:** users with role `cashier` get `403` on every v1 endpoint below (they only use the sales endpoints, coming with the POS).
+Collections carry `from_bills` `{cash, upi, online}` — the part of the day's totals that came from POS bills. `PUT /collections/{id}`
+still takes **day totals**; a total lower than its `from_bills` amount is rejected with `422`.
+
 ## Dashboard
 
 `GET /dashboard` → today's collection & expenses, attendance marked, month sales/expenses/profit,

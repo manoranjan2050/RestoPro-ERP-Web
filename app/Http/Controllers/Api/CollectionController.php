@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\CashCollection;
+use App\Services\DaySales;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
@@ -34,7 +35,16 @@ class CollectionController extends Controller
 
     public function update(Request $request, CashCollection $collection)
     {
-        $collection->update($this->validated($request, $collection->id) + ['updated_by' => $request->user()->id]);
+        // The app sends day totals. Bills (POS) are part of those totals and can't be lowered here.
+        $d = $this->validated($request, $collection->id);
+        $manual = [];
+        foreach (DaySales::MODES as $m) {
+            $manual[$m] = round($d[$m] - (float) $collection->{'pos_'.$m}, 2);
+            if ($manual[$m] < 0) {
+                throw \Illuminate\Validation\ValidationException::withMessages([$m => ['This day already has '.money($collection->{'pos_'.$m}).' from bills — the total cannot be less.']]);
+            }
+        }
+        DaySales::fillManual($collection->fill(['date' => $d['date'], 'note' => $d['note'], 'updated_by' => $request->user()->id]), $manual)->save();
 
         return response()->json(['data' => Fmt::collection($collection->fresh())]);
     }
@@ -42,7 +52,7 @@ class CollectionController extends Controller
     public function destroy(CashCollection $collection)
     {
         Gate::authorize('delete-records');
-        $collection->delete();
+        DaySales::deleteManual($collection);
 
         return response()->json(['ok' => true]);
     }

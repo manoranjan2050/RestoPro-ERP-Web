@@ -38,6 +38,7 @@ class Fmt
             'id' => $c->id, 'date' => $c->date->toDateString(),
             'cash' => self::money($c->cash), 'upi' => self::money($c->upi), 'online' => self::money($c->online),
             'total' => self::money($c->total), 'note' => $c->note,
+            'from_bills' => ['cash' => self::money($c->pos_cash), 'upi' => self::money($c->pos_upi), 'online' => self::money($c->pos_online)],
             'updated_at' => $c->updated_at?->toIso8601String(),
         ];
     }

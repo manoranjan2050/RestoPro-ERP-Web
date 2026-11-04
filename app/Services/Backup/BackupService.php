@@ -32,6 +32,8 @@ class BackupService
     public const TABLES = [
         'users', 'settings', 'expense_categories', 'vendors', 'staff',
         'cash_collections', 'expenses', 'vendor_payments', 'vendor_payment_allocations', 'attendances', 'staff_payments',
+        // v2 sales
+        'item_categories', 'items', 'item_variants', 'customers',
     ];
 
     /** Settings that must never travel in a backup (they belong to this server). */
@@ -225,7 +227,7 @@ class BackupService
         }
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $name = (string) $zip->getNameIndex($i);
-            if (! preg_match('#^files/(public|private)/((?:avatars|staff|logos|bills)/[A-Za-z0-9._/-]+)$#', $name, $m) || str_contains($name, '..')) {
+            if (! preg_match('#^files/(public|private)/((?:avatars|staff|logos|items|bills)/[A-Za-z0-9._/-]+)$#', $name, $m) || str_contains($name, '..')) {
                 continue; // ignore anything unexpected (no path traversal)
             }
             Storage::disk($m[1] === 'public' ? 'public' : 'local')->put($m[2], $zip->getFromIndex($i));
@@ -241,7 +243,7 @@ class BackupService
     private static function fileSources(): array
     {
         return [
-            'public' => ['public', ['avatars', 'staff', 'logos']],
+            'public' => ['public', ['avatars', 'staff', 'logos', 'items']],
             'private' => ['local', ['bills']],
         ];
     }

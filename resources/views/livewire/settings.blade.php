@@ -2,7 +2,7 @@
     {{-- Tabs --}}
     <div class="flex max-w-full overflow-x-auto">
         <div class="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            @foreach (['business' => 'Business', 'money' => 'Money & year', 'users' => 'Users & access'] as $k => $l)
+            @foreach (['business' => 'Business', 'mode' => 'Mode & sales', 'gst' => 'GST', 'money' => 'Money & year', 'users' => 'Users & access'] as $k => $l)
                 <button wire:click="$set('tab', '{{ $k }}')" @class([
                     'whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-semibold',
                     'bg-gradient-to-r from-brand-500 to-rose-500 text-white shadow' => $tab === $k,
@@ -84,6 +84,61 @@
                     <button class="btn-primary" wire:loading.attr="disabled" wire:target="saveBusiness,logo">Save</button>
                 </div>
             </div>
+        </form>
+    @elseif ($tab === 'mode')
+        <form wire:submit="saveMode" class="space-y-6">
+            <div class="grid gap-4 md:grid-cols-2">
+                @foreach (['simple' => ['Simple', 'Like v1: type each day\'s cash, UPI and online totals. Expenses, vendors, staff, reports and backups.', 'cash'],
+                           'advanced' => ['Advanced', 'Everything in Simple, plus a sales counter (POS) with items, customers, orders, printed bills, GST and stock.', 'spark']] as $k => [$label, $desc, $icon])
+                    <label wire:key="mode-{{ $k }}" @class(['card relative flex cursor-pointer gap-4 p-5 transition',
+                        'ring-2 ring-brand-500' => $mode === $k, 'hover:ring-1 hover:ring-slate-300 dark:hover:ring-slate-700' => $mode !== $k])>
+                        <input type="radio" wire:model.live="mode" value="{{ $k }}" class="sr-only">
+                        <span @class(['grid size-12 shrink-0 place-items-center rounded-2xl text-white',
+                            'bg-gradient-to-br from-emerald-400 to-teal-500' => $k === 'simple',
+                            'bg-gradient-to-br from-brand-400 to-violet-500' => $k === 'advanced'])><x-icon :name="$icon" class="size-6" /></span>
+                        <span class="min-w-0 pr-6">
+                            <span class="flex items-center gap-2 font-bold">{{ $label }} @if ($k === 'advanced')<span class="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-brand-700 dark:bg-brand-500/10 dark:text-brand-400">v2</span>@endif</span>
+                            <span class="mt-1 block text-sm text-slate-500 dark:text-slate-400">{{ $desc }}</span>
+                        </span>
+                        @if ($mode === $k)<span class="absolute right-4 top-4 text-brand-500"><x-icon name="check" class="size-5" /></span>@endif
+                    </label>
+                @endforeach
+            </div>
+
+            <div @class(['card p-5 sm:p-6', 'opacity-50' => $mode !== 'advanced'])>
+                <h3 class="text-base font-bold">Sales features</h3>
+                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Used in Advanced mode. Turn off what your shop doesn't need. Turning one off only hides it; nothing is deleted.</p>
+                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                    @foreach (\App\Support\Sales::FEATURES as $f => [$flabel, $fdesc])
+                        <label wire:key="feat-{{ $f }}" class="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-3 dark:border-slate-800">
+                            <input type="checkbox" wire:model="features.{{ $f }}" class="mt-0.5 size-4 rounded border-slate-300 text-brand-500" @disabled($mode !== 'advanced')>
+                            <span><span class="block text-sm font-semibold">{{ $flabel }}</span><span class="block text-xs text-slate-500">{{ $fdesc }}</span></span>
+                        </label>
+                    @endforeach
+                </div>
+            </div>
+            <p class="text-xs text-slate-500">Switching back to Simple keeps every item, customer and bill. In Advanced mode, bills paid at the counter are added to that day's Cash Collection automatically, so all v1 reports include them.</p>
+            <div class="flex justify-end"><button class="btn-primary" wire:loading.attr="disabled" wire:target="saveMode">Save</button></div>
+        </form>
+    @elseif ($tab === 'gst')
+        <form wire:submit="saveGst" class="card max-w-2xl space-y-5 p-5 sm:p-6">
+            <div>
+                <h3 class="text-base font-bold">GST billing</h3>
+                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Used by the sales counter in Advanced mode.</p>
+            </div>
+            <label class="flex cursor-pointer items-start gap-3">
+                <input type="checkbox" wire:model.live="gst_enabled" class="mt-0.5 size-4 rounded border-slate-300 text-brand-500">
+                <span><span class="block text-sm font-semibold">Charge GST on bills</span>
+                    <span class="block text-xs text-slate-500">On: bills print as <b>Tax Invoice</b> with your GSTIN, CGST + SGST per rate, HSN and a tax summary. Off: a plain <b>Bill</b> with no tax lines.</span></span>
+            </label>
+            @error('gst_enabled') <p class="error">{{ $message }}</p> @enderror
+            <div @class(['space-y-3 rounded-xl border border-slate-200 p-4 dark:border-slate-800', 'opacity-50' => ! $gst_enabled])>
+                <p class="text-sm font-semibold">Item prices are…</p>
+                <label class="flex items-start gap-2 text-sm"><input type="radio" wire:model="gst_inclusive" value="1" @disabled(! $gst_enabled) class="mt-1 size-4 text-brand-500"> <span><b>Including GST</b>: ₹500 on the menu = ₹500 on the bill (usual for cake & sweet shops)</span></label>
+                <label class="flex items-start gap-2 text-sm"><input type="radio" wire:model="gst_inclusive" value="0" @disabled(! $gst_enabled) class="mt-1 size-4 text-brand-500"> <span><b>Before GST</b>: ₹500 + 5% = ₹525 on the bill</span></label>
+                <p class="text-xs text-slate-500">Each item's GST rate (0/5/12/18/28 %) and HSN code are set on the Items page. GSTIN in use: <b>{{ \App\Models\Setting::get('business_gstin') ?: 'not set — add it under Business' }}</b></p>
+            </div>
+            <div class="flex justify-end"><button class="btn-primary" wire:loading.attr="disabled" wire:target="saveGst">Save</button></div>
         </form>
     @elseif ($tab === 'money')
         <form wire:submit="saveMoney" class="card max-w-2xl p-5 sm:p-6">
@@ -169,8 +224,9 @@
                     <div>
                         <label class="label" for="ur">Role</label>
                         <select id="ur" wire:model="u.role" class="input">
-                            <option value="manager">Manager</option>
-                            <option value="owner">Owner</option>
+                            @foreach (\App\Models\User::ROLES as $r => $rl)
+                                <option value="{{ $r }}">{{ $rl }}</option>
+                            @endforeach
                         </select>
                         @error('u.role') <p class="error">{{ $message }}</p> @enderror
                     </div>

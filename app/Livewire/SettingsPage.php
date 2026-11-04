@@ -33,6 +33,12 @@ class SettingsPage extends Component
     public array $biz = [];
     public $logo;
 
+    // mode + sales (v2)
+    public string $mode = 'simple';
+    public array $features = [];
+    public bool $gst_enabled = false;
+    public string $gst_inclusive = '1';
+
     public string $currency_symbol = '₹';
     public string $fy_start_month = '4';
 
@@ -49,6 +55,38 @@ class SettingsPage extends Component
         }
         $this->currency_symbol = (string) Setting::get('currency_symbol', '₹');
         $this->fy_start_month = (string) Setting::get('fy_start_month', '4');
+        $this->mode = Setting::get('app_mode', 'simple') === 'advanced' ? 'advanced' : 'simple';
+        foreach (array_keys(\App\Support\Sales::FEATURES) as $f) {
+            $this->features[$f] = Setting::get('sales_'.$f, '1') === '1';
+        }
+        $this->gst_enabled = Setting::get('gst_enabled', '0') === '1';
+        $this->gst_inclusive = Setting::get('gst_inclusive', '1') === '1' ? '1' : '0';
+    }
+
+    public function saveMode(): void
+    {
+        Gate::authorize('manage-settings');
+        $this->validate(['mode' => ['required', Rule::in(['simple', 'advanced'])], 'features.*' => ['boolean']]);
+        Setting::put('app_mode', $this->mode);
+        foreach (array_keys(\App\Support\Sales::FEATURES) as $f) {
+            Setting::put('sales_'.$f, ! empty($this->features[$f]) ? '1' : '0');
+        }
+        $this->dispatch('toast', message: $this->mode === 'advanced' ? 'Advanced mode on — the Sales menu is now in the sidebar' : 'Simple mode on');
+        $this->redirectRoute('settings', ['tab' => 'mode'], navigate: true); // rebuild the sidebar
+    }
+
+    public function saveGst(): void
+    {
+        Gate::authorize('manage-settings');
+        $this->resetErrorBag('gst_enabled');
+        if ($this->gst_enabled && ! preg_match('/^[0-9]{2}[A-Z0-9]{13}$/', (string) Setting::get('business_gstin'))) {
+            $this->addError('gst_enabled', 'Enter your GSTIN under Business first — it is printed on every tax invoice.');
+
+            return;
+        }
+        Setting::put('gst_enabled', $this->gst_enabled ? '1' : '0');
+        Setting::put('gst_inclusive', $this->gst_inclusive === '0' ? '0' : '1');
+        $this->dispatch('toast', message: $this->gst_enabled ? 'GST billing on' : 'GST billing off — normal bills');
     }
 
     public function saveBusiness(): void
@@ -148,7 +186,7 @@ class SettingsPage extends Component
             'u.username' => ['required', 'alpha_dash', 'min:3', 'max:40', Rule::unique('users', 'username')->ignore($id)],
             'u.mobile' => ['nullable', 'digits:10', Rule::unique('users', 'mobile')->ignore($id)],
             'u.email' => ['nullable', 'email', 'max:120', Rule::unique('users', 'email')->ignore($id)],
-            'u.role' => ['required', Rule::in([User::ROLE_OWNER, User::ROLE_MANAGER])],
+            'u.role' => ['required', Rule::in(array_keys(User::ROLES))],
             'u.is_active' => ['boolean'],
             'u.password' => [$id ? 'nullable' : 'required', Password::min(8)],
         ], [], ['u.name' => 'name', 'u.username' => 'username', 'u.mobile' => 'mobile', 'u.email' => 'email', 'u.password' => 'password']);

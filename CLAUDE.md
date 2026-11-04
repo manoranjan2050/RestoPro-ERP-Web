@@ -51,6 +51,12 @@ php .tools/composer.phar <cmd>       # composer is not installed globally
 - Bill photos: private `local` disk under bills/YYYY-MM, served by route `expenses.bill` (auth only).
 - Sidebar items light up automatically once their route name exists (config/restopro.php); an item's optional `can`
   (Gate name) hides it from users without that permission.
+- v2 sales: `App\Support\Sales` — `advanced()` (Settings key app_mode simple|advanced), `on('tables'|'delivery'|'advance'|'stock')`,
+  `gst()`, `gstInclusive()`. Sales routes use middleware `advanced` (404 in Simple mode). Nav groups/items take `mode`,
+  `feature` and `pos` (only `pos` items are shown to the Cashier role). Gate `back-office` = everyone except cashiers.
+- Day sales: `cash_collections.cash/upi/online` are DAY TOTALS (all v1 reports read them); `pos_*` is the part from bills.
+  Never write those columns directly from POS code — call `App\Services\DaySales::setPos($date, [...])`. The Cash
+  Collection page edits only the hand-entered share (`fillManual`), and delete keeps the bill share (`deleteManual`).
 - Business details live in Settings keys `business_*` (logo path = `business_logo` on the public disk, logos/).
   Use `<x-brand-mark />` for the logo-or-initial badge.
 

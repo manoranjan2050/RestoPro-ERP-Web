@@ -25,12 +25,24 @@
     </div>
 
     <nav class="flex-1 space-y-6 overflow-y-auto px-3 py-4">
-        @foreach (config('restopro.nav') as $group)
+        @php
+            $advanced = \App\Support\Sales::advanced();
+            $isCashier = $user->isCashier();
+            // Which links this user sees: Advanced-only groups, feature switches, cashier = POS items only, gate checks.
+            $navGroups = collect(config('restopro.nav'))
+                ->reject(fn ($g) => ($g['mode'] ?? null) === 'advanced' && ! $advanced)
+                ->map(fn ($g) => $g + ['visible' => collect($g['items'])->filter(fn ($i) =>
+                    (! isset($i['feature']) || \App\Support\Sales::on($i['feature']))
+                    && (! $isCashier || ! empty($i['pos']))
+                    && ! (isset($i['can']) && \Illuminate\Support\Facades\Route::has($i['route']) && ! \Illuminate\Support\Facades\Gate::allows($i['can']))
+                )->values()])
+                ->filter(fn ($g) => $g['visible']->isNotEmpty());
+        @endphp
+        @foreach ($navGroups as $group)
             <div>
                 <p class="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">{{ $group['group'] }}</p>
                 <ul class="space-y-1">
-                    @foreach ($group['items'] as $item)
-                        @continue(isset($item['can']) && \Illuminate\Support\Facades\Route::has($item['route']) && ! \Illuminate\Support\Facades\Gate::allows($item['can']))
+                    @foreach ($group['visible'] as $item)
                         @php
                             $exists = \Illuminate\Support\Facades\Route::has($item['route']);
                             $active = $exists && request()->routeIs($item['route'], $item['route'].'.*');

@@ -11,6 +11,14 @@ use Livewire\Component;
 #[Title('Dashboard')]
 class Dashboard extends Component
 {
+    public function mount()
+    {
+        // Cashiers have no back office: send them to the counter.
+        if (auth()->user()->isCashier()) {
+            return $this->redirectRoute(auth()->user()->homeRoute(), navigate: true);
+        }
+    }
+
     public function render()
     {
         $today = CashCollection::whereDate('date', today()->toDateString())->first();

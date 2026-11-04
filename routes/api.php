@@ -22,6 +22,9 @@ Route::prefix('v1')->name('api.')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
         Route::get('/meta', [AuthController::class, 'metaEndpoint']);
+
+        // v1 back office — owner + manager only (cashiers use the sales endpoints).
+        Route::middleware('can:back-office')->group(function () {
         Route::get('/dashboard', DashboardController::class);
 
         // Sales
@@ -80,5 +83,6 @@ Route::prefix('v1')->name('api.')->group(function () {
         Route::get('/analytics', [InsightsController::class, 'analytics']);
         Route::get('/backups', [InsightsController::class, 'backups']);
         Route::post('/backups', [InsightsController::class, 'backupNow']);
+        });
     });
 });

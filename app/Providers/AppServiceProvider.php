@@ -20,6 +20,8 @@ class AppServiceProvider extends ServiceProvider
         // Backups hold every record, password hashes and bill photos — owner only.
         Gate::define('manage-backups', fn (User $user) => $user->isOwner());
         Gate::define('manage-settings', fn (User $user) => $user->isOwner());
+        // Everything except the POS/order screens. Cashiers (v2) only bill at the counter.
+        Gate::define('back-office', fn (User $user) => $user->role !== User::ROLE_CASHIER);
 
         // Backup ZIPs can be larger than Livewire's 12 MB default. Each form still validates its own max size.
         config([

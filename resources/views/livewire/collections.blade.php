@@ -77,7 +77,9 @@
                                 <td class="px-5 py-3 text-right tabular-nums">{{ money($e->upi) }}</td>
                                 <td class="px-5 py-3 text-right tabular-nums">{{ money($e->online) }}</td>
                                 <td class="px-5 py-3 text-right font-bold tabular-nums text-emerald-600 dark:text-emerald-400">{{ money($e->total) }}</td>
-                                <td class="max-w-48 truncate px-5 py-3 text-slate-500" title="{{ $e->note }}">{{ $e->note ?: '—' }}</td>
+                                <td class="max-w-48 truncate px-5 py-3 text-slate-500" title="{{ $e->note }}">
+                                    @if (\App\Services\DaySales::hasPos($e))<span class="mr-1 rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">{{ money(array_sum(\App\Services\DaySales::pos($e))) }} bills</span>@endif{{ $e->note ?: (\App\Services\DaySales::hasPos($e) ? '' : '—') }}
+                                </td>
                                 <td class="whitespace-nowrap px-5 py-3 text-right">
                                     <button wire:click="edit({{ $e->id }})" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-500/10">Edit</button>
                                     @can('delete-records')
@@ -108,6 +110,7 @@
                             <div>
                                 <p class="font-semibold">{{ $e->date->format('d M Y') }} <span class="text-xs font-normal text-slate-500">· {{ $e->date->format('D') }}</span></p>
                                 @if ($e->note) <p class="mt-0.5 text-xs text-slate-500">{{ $e->note }}</p> @endif
+                                @if (\App\Services\DaySales::hasPos($e)) <p class="mt-0.5 text-xs font-semibold text-violet-600 dark:text-violet-400">{{ money(array_sum(\App\Services\DaySales::pos($e))) }} from bills</p> @endif
                             </div>
                             <p class="text-lg font-extrabold tabular-nums text-emerald-600 dark:text-emerald-400">{{ money($e->total) }}</p>
                         </div>
@@ -144,10 +147,16 @@
                     @endif
                 </div>
 
+                @if ($posTotal > 0)
+                    <div class="rounded-xl bg-violet-50 px-3 py-2 text-xs text-violet-800 dark:bg-violet-500/10 dark:text-violet-300">
+                        <b>{{ money($posTotal) }} came from bills</b> (cash {{ money($pos['cash']) }} · UPI {{ money($pos['upi']) }} · online/card {{ money($pos['online']) }}) and is added automatically.
+                        Enter only sales <b>not</b> billed on the POS below.
+                    </div>
+                @endif
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     @foreach (['cash' => ['Cash', 'emerald'], 'upi' => ['UPI', 'sky'], 'online' => ['Online', 'amber']] as $f => [$label, $tone])
                         <div>
-                            <label class="label" for="c-{{ $f }}">{{ $label }}</label>
+                            <label class="label" for="c-{{ $f }}">{{ $label }}{{ $posTotal > 0 ? ' (by hand)' : '' }}</label>
                             <div class="relative">
                                 <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-slate-400">{{ \App\Models\Setting::get('currency_symbol') }}</span>
                                 <input id="c-{{ $f }}" type="number" step="0.01" min="0" inputmode="decimal" wire:model.live.debounce.250ms="{{ $f }}"
