@@ -14,6 +14,7 @@
 
     <div class="relative w-full max-w-md">
         {{ $slot }}
+        <x-dev-credit class="mt-6" />
     </div>
 </div>
 @livewireScripts

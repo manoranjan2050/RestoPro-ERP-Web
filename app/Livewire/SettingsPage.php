@@ -44,6 +44,7 @@ class SettingsPage extends Component
     public string $max_discount = '100';
     public string $delivery_charge = '0';
     public string $weight_unit = 'kg';
+    public string $shop_type = 'other';
 
     public string $currency_symbol = '₹';
     public string $fy_start_month = '4';
@@ -72,7 +73,43 @@ class SettingsPage extends Component
         $this->max_discount = (string) Setting::get('pos_max_discount', '100');
         $this->delivery_charge = (string) Setting::get('delivery_charge', '0');
         $this->weight_unit = \App\Support\Sales::weightUnit();
+        $this->shop_type = \App\Support\Sales::shopType();
         $this->gst_inclusive = Setting::get('gst_inclusive', '1') === '1' ? '1' : '0';
+    }
+
+    /** Type of business: fill in the matching feature switches and cake weights (still editable), then save. */
+    public function chooseShopType(string $type): void
+    {
+        Gate::authorize('manage-settings');
+        $preset = \App\Support\Sales::SHOP_TYPES[$type] ?? null;
+        if (! $preset) {
+            return;
+        }
+        $this->shop_type = $type;
+        Setting::put('shop_type', $type);
+        if ($preset[3]) {
+            $this->features = $preset[3];
+            $this->mode = 'advanced';
+        }
+        if ($preset[4]) {
+            $this->weight_unit = $preset[4];
+            Setting::put('weight_unit', $preset[4]);
+        }
+        $this->saveMode();
+    }
+
+    /** Create the suggested menu categories for the shop type (ones that already exist are skipped). */
+    public function addSuggestedCategories(): void
+    {
+        Gate::authorize('manage-settings');
+        $made = 0;
+        foreach (\App\Support\Sales::SHOP_TYPES[$this->shop_type][5] ?? [] as $name) {
+            if (! \App\Models\ItemCategory::whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->exists()) {
+                \App\Models\ItemCategory::create(['name' => $name, 'color' => \App\Models\ItemCategory::nextColor(), 'sort' => (int) \App\Models\ItemCategory::max('sort') + 1]);
+                $made++;
+            }
+        }
+        $this->dispatch('toast', message: $made ? "{$made} categories added — add items to them on the Items page" : 'Those categories are already there');
     }
 
     public function saveMode(): void

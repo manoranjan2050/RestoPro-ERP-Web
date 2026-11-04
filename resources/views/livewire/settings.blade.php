@@ -86,6 +86,35 @@
             </div>
         </form>
     @elseif ($tab === 'mode')
+        <div class="card mb-6 p-5 sm:p-6">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h3 class="text-base font-bold">Type of business</h3>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Pick yours and the app sets itself up for it: which features are on, cake weights, and menu categories. You can still change every switch below.</p>
+                </div>
+                @php $cats = \App\Support\Sales::SHOP_TYPES[$shop_type][5] ?? []; @endphp
+                @if ($cats)
+                    <button type="button" wire:click="addSuggestedCategories" class="btn-ghost shrink-0" title="{{ implode(', ', $cats) }}">+ Add suggested categories</button>
+                @endif
+            </div>
+            <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                @foreach (\App\Support\Sales::SHOP_TYPES as $k => [$label, $emoji, $desc])
+                    <button type="button" wire:key="shop-{{ $k }}" wire:click="chooseShopType('{{ $k }}')" @class(['relative flex gap-3 rounded-2xl border p-3 text-left transition',
+                        'border-brand-500 bg-brand-50 ring-1 ring-brand-500 dark:bg-brand-500/10' => $shop_type === $k,
+                        'border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700' => $shop_type !== $k])>
+                        <span class="text-2xl leading-none">{{ $emoji }}</span>
+                        <span class="min-w-0">
+                            <span class="block text-sm font-bold">{{ $label }}</span>
+                            <span class="block text-xs text-slate-500">{{ $desc }}</span>
+                        </span>
+                        @if ($shop_type === $k)<span class="absolute right-2 top-2 text-brand-500"><x-icon name="check" class="size-4" /></span>@endif
+                    </button>
+                @endforeach
+            </div>
+            @if ($cats)
+                <p class="mt-3 text-xs text-slate-500">Suggested categories for {{ \App\Support\Sales::SHOP_TYPES[$shop_type][0] }}: {{ implode(' · ', $cats) }}</p>
+            @endif
+        </div>
         <form wire:submit="saveMode" class="space-y-6">
             <div class="grid gap-4 md:grid-cols-2">
                 @foreach (['simple' => ['Simple', 'Like v1: type each day\'s cash, UPI and online totals. Expenses, vendors, staff, reports and backups.', 'cash'],
@@ -292,6 +321,20 @@
             @endforeach
         </div>
     @endif
+
+    <a href="{{ route('developer') }}" class="group relative block overflow-clip rounded-3xl bg-slate-950 p-5 text-white sm:p-6">
+        <div class="pointer-events-none absolute -right-10 -top-16 size-48 rounded-full bg-brand-500/40 blur-3xl transition group-hover:scale-125"></div>
+        <div class="pointer-events-none absolute -bottom-16 left-1/3 size-40 rounded-full bg-violet-600/40 blur-3xl transition group-hover:scale-125"></div>
+        <div class="relative flex flex-wrap items-center gap-4">
+            <span class="grid size-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-brand-400 via-rose-500 to-violet-600 text-2xl font-black">M</span>
+            <div class="min-w-0 flex-1">
+                <p class="text-xs uppercase tracking-[.25em] text-slate-400">About this software</p>
+                <p class="text-lg font-bold">RestoPro ERP · developed by <span class="bg-gradient-to-r from-brand-300 to-violet-300 bg-clip-text text-transparent">MANORANJAN</span></p>
+                <p class="text-sm text-slate-400">manoranjan.dev · github.com/manoranjan2050 · open source (MIT)</p>
+            </div>
+            <span class="rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold transition group-hover:bg-white/20">Developer profile →</span>
+        </div>
+    </a>
 
     @if ($showUser)
         <x-modal :title="$userId ? 'Edit login' : 'Add login'">

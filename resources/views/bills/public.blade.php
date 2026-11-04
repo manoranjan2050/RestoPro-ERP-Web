@@ -66,6 +66,7 @@
 
     @if ($print['footer'] !== '')<p class="mt-6 text-center text-sm text-slate-500">{!! nl2br(e($print['footer'])) !!}</p>@endif
     <p class="mt-2 text-center text-xs text-slate-400">{{ $o->gst_enabled && $biz['gstin'] ? 'GSTIN '.$biz['gstin'].' · ' : '' }}{{ $biz['fssai'] ? 'FSSAI '.$biz['fssai'] : '' }}</p>
+    <x-dev-credit class="mt-6" />
 </div>
 @livewireScripts
 </body>

@@ -75,6 +75,11 @@ php .tools/composer.phar <cmd>       # composer is not installed globally
   ReportBuilder. Always list report types with `ReportBuilder::types()` (adds the v2 ones only in Advanced mode); kind
   `day` takes ?date=. Sales = completed bills by billed_at; "collected" = order_payments by payment date (incl. advances).
   Day-end thermal print: route reports.day-end.print → bills/report-thermal.
+- Custom (off-menu) lines: cart line `item_id: null` + `custom {name, rate, gst_rate}`; stored as order_items with item_id
+  NULL (no stock). Loading an order turns item-less lines back into custom lines (also covers deleted items).
+- Shop types: `Sales::SHOP_TYPES` presets (features, weight_unit, suggested categories); Settings → Mode & sales.
+  Weight units/size sets: `Sales::weightUnit()` / `sizeSets()` (kg, lb, both); Item unit `lb` = Pound.
+- Developer credit `<x-dev-credit />` is in every layout; public profile page /developer (resources/views/developer.blade.php).
 - Printing: `App\Services\BillView::data($order)` feeds bills/receipt (58/80 mm via @page, browser print), bills/kot,
   bills/pdf (dompdf A5, logo as data URI) and bills/public (/b/{token}, no login, NoIndex, works in Simple mode).
   The POS auto-prints through hidden iframes inside `wire:ignore` (Livewire morph would strip a JS-set src).

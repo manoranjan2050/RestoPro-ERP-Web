@@ -17,6 +17,39 @@ class Sales
         'stock' => ['Stock', 'Track how many of an item are left; goes down on every sale.'],
     ];
 
+    /**
+     * Type of business → a preset for the sales features, cake weights and suggested menu categories.
+     * Choosing a type only fills these in; every switch can still be changed afterwards.
+     */
+    public const SHOP_TYPES = [
+        'cake_shop' => ['Cake shop / Bakery', '🎂', 'Counter sales, custom cake orders with advance, home delivery, stock of cakes & pastries.',
+            ['tables' => false, 'delivery' => true, 'advance' => true, 'stock' => true], 'both',
+            ['Cakes', 'Pastries', 'Cupcakes & Muffins', 'Cookies', 'Breads', 'Snacks', 'Beverages']],
+        'restaurant' => ['Restaurant', '🍽️', 'Dine-in tables with KOT, takeaway and delivery.',
+            ['tables' => true, 'delivery' => true, 'advance' => false, 'stock' => false], 'kg',
+            ['Starters', 'Main course', 'Breads', 'Rice & Biryani', 'Chinese', 'Desserts', 'Beverages']],
+        'hotel' => ['Hotel', '🏨', 'Restaurant tables + room service delivery, advance bookings for functions.',
+            ['tables' => true, 'delivery' => true, 'advance' => true, 'stock' => false], 'kg',
+            ['Breakfast', 'Starters', 'Main course', 'Breads', 'Rice & Biryani', 'Desserts', 'Beverages', 'Room service']],
+        'cafe' => ['Café', '☕', 'Counter + a few tables, quick bills, stock of baked items.',
+            ['tables' => true, 'delivery' => true, 'advance' => false, 'stock' => true], 'kg',
+            ['Coffee', 'Tea', 'Shakes & Smoothies', 'Sandwiches', 'Snacks', 'Desserts']],
+        'sweet_shop' => ['Sweet shop', '🍬', 'Sweets sold by weight or piece, festival bulk orders with advance, stock.',
+            ['tables' => false, 'delivery' => true, 'advance' => true, 'stock' => true], 'kg',
+            ['Sweets', 'Bengali sweets', 'Dry fruit sweets', 'Namkeen', 'Snacks', 'Beverages']],
+        'fast_food' => ['Fast food / Dhaba', '🍔', 'Quick counter and takeaway, a few tables, delivery.',
+            ['tables' => true, 'delivery' => true, 'advance' => false, 'stock' => false], 'kg',
+            ['Burgers', 'Pizzas', 'Rolls & Wraps', 'Momos', 'Chinese', 'Beverages']],
+        'other' => ['Other', '🏪', 'Set every switch yourself.', null, null, []],
+    ];
+
+    public static function shopType(): string
+    {
+        $t = (string) Setting::get('shop_type', 'other');
+
+        return array_key_exists($t, self::SHOP_TYPES) ? $t : 'other';
+    }
+
     /** How cake weights are written in this shop: kg, lb (pound) or both. */
     public const WEIGHT_UNITS = ['kg' => 'Kg / gram', 'lb' => 'Pound', 'both' => 'Both'];
 

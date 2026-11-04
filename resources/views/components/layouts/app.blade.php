@@ -114,6 +114,7 @@
 
     <main @class(["mx-auto p-4 sm:p-6", "max-w-7xl lg:p-8" => ! request()->routeIs("pos"), "max-w-none lg:p-5" => request()->routeIs("pos")])>
         {{ $slot }}
+        <x-dev-credit class="mt-10 pb-2" />
     </main>
 </div>
 

@@ -90,6 +90,7 @@ class AuthController extends Controller
                 'stages' => \App\Models\Order::STAGES,
                 'print' => \App\Services\BillView::printSettings(),
                 'weight_unit' => \App\Support\Sales::weightUnit(),
+                'shop_type' => \App\Support\Sales::shopType(),
                 'sizes' => \App\Support\Sales::sizeSets(),
             ],
         ];

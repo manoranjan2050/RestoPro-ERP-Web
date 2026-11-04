@@ -13,6 +13,7 @@
         <x-brand-mark size="size-6" text="text-xs" radius="rounded-md" class="shadow-none" />
         <span>Read-only staff statement · {{ \App\Models\Setting::get('business_name') }}</span>
     </div>
+    <x-dev-credit class="mt-3" />
 </div>
 <x-toast />
 @livewireScripts

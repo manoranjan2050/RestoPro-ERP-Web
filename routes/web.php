@@ -98,6 +98,9 @@ Route::middleware('auth')->group(function () {
     })->name('logout');
 });
 
+// About the developer (public).
+Route::view('/developer', 'developer')->name('developer');
+
 // Customer's bill: no login, unguessable token. Works in Simple mode too, so links already sent never break.
 Route::get('/b/{token}', [\App\Http\Controllers\BillController::class, 'publicShow'])
     ->where('token', '[A-Za-z0-9]{20,64}')
