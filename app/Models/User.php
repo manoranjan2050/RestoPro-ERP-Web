@@ -54,6 +54,37 @@ class User extends Authenticatable
         return 'dashboard';
     }
 
+    /** Username of the locked public demo account (config restopro.demo.username), or null. */
+    public static function demoUsername(): ?string
+    {
+        $u = config('restopro.demo.username');
+
+        return $u ? mb_strtolower((string) $u) : null;
+    }
+
+    /** True for the public demo account — its login details can't be changed by anyone. */
+    public function isDemoAccount(): bool
+    {
+        $demo = static::demoUsername();
+
+        return $demo !== null && mb_strtolower((string) ($this->getOriginal('username') ?? $this->username)) === $demo;
+    }
+
+    protected static function booted(): void
+    {
+        // Last line of defence for the demo account (the screens also refuse with a friendly message).
+        static::updating(function (User $user) {
+            if ($user->isDemoAccount() && $user->isDirty(['name', 'username', 'email', 'mobile', 'photo_path', 'password', 'role', 'is_active'])) {
+                throw new \DomainException('The demo account is read-only.');
+            }
+        });
+        static::deleting(function (User $user) {
+            if ($user->isDemoAccount()) {
+                throw new \DomainException('The demo account cannot be deleted.');
+            }
+        });
+    }
+
     public function isOwner(): bool
     {
         return $this->role === self::ROLE_OWNER;

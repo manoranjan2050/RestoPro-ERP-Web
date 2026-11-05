@@ -20,6 +20,16 @@ class Login extends Component
     public string $password = '';
     public bool $remember = true;
 
+    /** Demo servers: fill in the public demo login and sign in. */
+    public function useDemo()
+    {
+        abort_unless(User::demoUsername() && config('restopro.demo.password'), 404);
+        $this->identifier = (string) config('restopro.demo.username');
+        $this->password = (string) config('restopro.demo.password');
+
+        return $this->login();
+    }
+
     public function login()
     {
         $this->validate([

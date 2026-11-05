@@ -33,8 +33,22 @@ class Profile extends Component
         $this->fill($u->only(['name', 'username', 'email', 'mobile']));
     }
 
+    /** Demo account: profile and password are read-only. */
+    private function demoLocked(): bool
+    {
+        if (! Auth::user()->isDemoAccount()) {
+            return false;
+        }
+        $this->dispatch('toast', message: 'This is the demo account — its details and password cannot be changed.');
+
+        return true;
+    }
+
     public function saveProfile(): void
     {
+        if ($this->demoLocked()) {
+            return;
+        }
         $user = Auth::user();
         $this->username = mb_strtolower(trim($this->username));
         $this->email = $this->email ? mb_strtolower(trim($this->email)) : null;
@@ -65,6 +79,9 @@ class Profile extends Component
 
     public function removePhoto(): void
     {
+        if ($this->demoLocked()) {
+            return;
+        }
         $user = Auth::user();
         if ($user->photo_path) {
             Storage::disk('public')->delete($user->photo_path);
@@ -75,6 +92,9 @@ class Profile extends Component
 
     public function changePassword(): void
     {
+        if ($this->demoLocked()) {
+            return;
+        }
         $this->validate([
             'current_password' => ['required', 'current_password'],
             'new_password' => ['required', 'confirmed', Password::min(8)],

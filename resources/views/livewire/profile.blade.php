@@ -21,6 +21,9 @@
     </div>
 
     <div class="space-y-6 lg:col-span-2">
+        @if ($user->isDemoAccount())
+            <p class="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">This is the shared <b>demo account</b>. Its name, username and password can't be changed.</p>
+        @endif
         {{-- Profile form --}}
         <form wire:submit="saveProfile" class="card p-5 sm:p-6">
             <h3 class="text-base font-bold">Profile details</h3>

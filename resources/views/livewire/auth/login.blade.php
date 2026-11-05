@@ -9,6 +9,14 @@
         <p class="mb-5 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300">{{ session('status') }}</p>
     @endif
 
+    @if (config('restopro.demo.username') && config('restopro.demo.password'))
+        <div class="mb-6 rounded-2xl border border-brand-200 bg-brand-50 p-4 text-sm dark:border-brand-500/30 dark:bg-brand-500/10">
+            <p class="font-semibold text-brand-700 dark:text-brand-300">Demo — try it with sample data</p>
+            <p class="mt-1 text-slate-600 dark:text-slate-300">Username <b>{{ config('restopro.demo.username') }}</b> · Password <b>{{ config('restopro.demo.password') }}</b></p>
+            <button type="button" wire:click="useDemo" class="btn-primary mt-3 w-full py-2.5">Use the demo login</button>
+        </div>
+    @endif
+
     <form wire:submit="login" class="space-y-5" novalidate>
         <div>
             <label for="identifier" class="label">Mobile, username or email</label>

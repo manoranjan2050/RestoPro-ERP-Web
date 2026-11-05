@@ -5,6 +5,16 @@
  * "Soon" item, so modules light up automatically as each phase lands.
  */
 return [
+    /*
+     * Public demo login (demo servers only). DEMO_LOGIN=demo + DEMO_LOGIN_PASSWORD=demo in .env:
+     * the login page shows a "Use the demo login" button and that account is locked —
+     * nobody can change its username, password, role or details, or turn it off.
+     */
+    'demo' => [
+        'username' => env('DEMO_LOGIN'),
+        'password' => env('DEMO_LOGIN_PASSWORD'),
+    ],
+
     'nav' => [
         ['group' => 'Overview', 'items' => [
             ['label' => 'Dashboard', 'route' => 'dashboard', 'icon' => 'home'],

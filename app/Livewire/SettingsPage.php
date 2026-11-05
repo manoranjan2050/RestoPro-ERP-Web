@@ -302,6 +302,11 @@ class SettingsPage extends Component
         ], [], ['u.name' => 'name', 'u.username' => 'username', 'u.mobile' => 'mobile', 'u.email' => 'email', 'u.password' => 'password']);
 
         $user = $id ? User::findOrFail($id) : new User;
+        if ($user->exists && $user->isDemoAccount()) {
+            $this->addError('u.username', 'This is the demo account — it cannot be changed.');
+
+            return;
+        }
         $removesOwner = $user->exists && $user->isOwner() && $user->is_active
             && ($this->u['role'] !== User::ROLE_OWNER || ! $this->u['is_active']);
         if ($user->exists && $user->id === Auth::id() && ($this->u['role'] !== $user->role || ! $this->u['is_active'])) {
