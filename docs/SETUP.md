@@ -152,10 +152,11 @@ It builds the CSS/JS, packs the committed code, uploads it, then on the server:
 Then create the owner account **once**:
 
 ```bash
-ssh -p 65002 u123456789@203.0.113.10 "cd ~/restopro-app && php artisan db:seed --force"
+ssh -p 65002 u123456789@203.0.113.10 "cd ~/restopro-app && php artisan optimize:clear && php artisan db:seed --force && php artisan optimize"
 ```
 
-Afterwards, **remove `ADMIN_PASSWORD` from the server `.env`**. Change the password any time later in *Profile*.
+(`optimize:clear` first: the deploy caches the config, and the seeder can't read `ADMIN_PASSWORD` from a cached config.)
+Afterwards, **remove `ADMIN_PASSWORD` from the server `.env`** and run `php artisan optimize` again. Change the password any time later in *Profile*.
 
 > If the server has no global `composer`, put `composer.phar` in your home directory:
 > `curl -sS https://getcomposer.org/installer | php -- --install-dir=$HOME`
