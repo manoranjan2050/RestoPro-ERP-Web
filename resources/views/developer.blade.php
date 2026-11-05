@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    @include('components.layouts.head', ['title' => 'MANORANJAN — developer of RestoPro ERP'])
+    @include('components.layouts.head', ['title' => 'MANORANJAN — developer of OpenRestoPro ERP'])
     <meta name="description" content="Manoranjan is a full-stack developer, IoT engineer and PCB designer building Android apps, web platforms and smart-home tools under MTP Code.">
     <style>
         @keyframes blob { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(40px,-60px) scale(1.15); } 66% { transform: translate(-30px,30px) scale(.9); } }
@@ -29,8 +29,8 @@
 
 <main class="relative mx-auto max-w-5xl px-5 py-10 sm:py-16">
     <div class="flex justify-between text-sm">
-        <a href="{{ auth()->check() ? route(auth()->user()->homeRoute()) : route('login') }}" class="text-slate-400 hover:text-white">‹ Back to {{ \App\Models\Setting::get('business_name') ?: 'RestoPro ERP' }}</a>
-        <span class="text-slate-500">RestoPro ERP</span>
+        <a href="{{ auth()->check() ? route(auth()->user()->homeRoute()) : route('login') }}" class="text-slate-400 hover:text-white">‹ Back to {{ \App\Models\Setting::get('business_name') ?: 'OpenRestoPro ERP' }}</a>
+        <span class="text-slate-500">OpenRestoPro ERP</span>
     </div>
 
     {{-- Hero --}}
@@ -55,7 +55,7 @@
            x-init="tick()"><span x-text="text" class="caret"></span></p>
         <p class="mt-6 max-w-2xl text-base leading-relaxed text-slate-400 rise" style="animation-delay:.45s">
             I build software that runs real businesses and real hardware — web platforms, Android apps and smart IoT devices,
-            from the circuit board to the cloud. RestoPro ERP was built for restaurants, cake shops and hotels that want their
+            from the circuit board to the cloud. OpenRestoPro ERP was built for restaurants, cake shops and hotels that want their
             counter, kitchen, staff and accounts in one simple place.
         </p>
         <div class="mt-8 flex flex-wrap justify-center gap-3 rise" style="animation-delay:.55s">
@@ -111,7 +111,7 @@
     {{-- About this app --}}
     <section class="mt-16 rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-white/0 p-6 text-center backdrop-blur sm:p-10 rise" style="animation-delay:1.4s">
         <p class="text-4xl">🍛</p>
-        <h2 class="mt-3 text-2xl font-black">RestoPro ERP</h2>
+        <h2 class="mt-3 text-2xl font-black">OpenRestoPro ERP</h2>
         <p class="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-slate-400">
             Sales counter with thermal printing, tables &amp; KOT, cake orders, GST bills, stock, expenses &amp; vendor khata,
             staff attendance &amp; salary, reports and cloud backups — on the web and on Android. Open source under the MIT licence.

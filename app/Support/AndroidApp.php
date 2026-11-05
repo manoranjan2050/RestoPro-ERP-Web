@@ -53,7 +53,7 @@ class AndroidApp
     {
         $v = preg_replace('/[^0-9A-Za-z.]/', '', (string) Setting::get('app_apk_version', ''));
 
-        return 'RestoPro-ERP'.($v !== '' ? '-'.$v : '').'.apk';
+        return 'OpenRestoPro-ERP'.($v !== '' ? '-'.$v : '').'.apk';
     }
 
     public static function sizeLabel(int $bytes): string

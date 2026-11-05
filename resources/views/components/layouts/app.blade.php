@@ -19,7 +19,7 @@
         <x-brand-mark />
         <div class="min-w-0">
             <p class="truncate text-sm font-bold text-white">{{ $business }}</p>
-            <p class="truncate text-xs text-slate-400">{{ \App\Models\Setting::get('business_tagline') ?: 'RestoPro ERP' }}</p>
+            <p class="truncate text-xs text-slate-400">{{ \App\Models\Setting::get('business_tagline') ?: 'OpenRestoPro ERP' }}</p>
         </div>
         <button class="ml-auto rounded-lg p-1.5 hover:bg-slate-800 lg:hidden" @click="nav = false" aria-label="Close menu"><x-icon name="x" /></button>
     </div>

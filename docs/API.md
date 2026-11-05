@@ -1,4 +1,4 @@
-# RestoPro ERP — REST API v1 (for the Android app)
+# OpenRestoPro ERP — REST API v1 (for the Android app)
 
 Base URL: `https://<domain>/api/v1` (local: `http://127.0.0.1:8090/api/v1`)
 

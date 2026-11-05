@@ -1,6 +1,6 @@
 # 🛠 Setup guide
 
-This guide takes RestoPro ERP from zero to a live site with HTTPS, daily backups and your own owner login.
+This guide takes OpenRestoPro ERP from zero to a live site with HTTPS, daily backups and your own owner login.
 
 | Part | What it covers | Time |
 |---|---|---|

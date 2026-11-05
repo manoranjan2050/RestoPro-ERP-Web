@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🍛 RestoPro ERP
+# 🍛 OpenRestoPro ERP
 
 **The back office and the sales counter of a small restaurant, in one place.**<br>
 Daily sales, expenses and vendor khata, staff attendance and salary ledger, reports, and cloud backups.<br>
@@ -17,7 +17,7 @@ Built for Indian restaurants, dhabas, cafés and sweet shops. Runs on cheap shar
 
 [Features](#-features) · [v2 Sales counter](#-v2-sales-counter-advanced-mode) · [Screenshots](#-screenshots) · [Quick start](#-quick-start) · [Setup guide](docs/SETUP.md) · [API](docs/API.md) · [Backups](docs/BACKUP_SETUP.md)
 
-<img src="docs/screenshots/dashboard.jpg" alt="RestoPro ERP dashboard" width="100%">
+<img src="docs/screenshots/dashboard.jpg" alt="OpenRestoPro ERP dashboard" width="100%">
 
 </div>
 

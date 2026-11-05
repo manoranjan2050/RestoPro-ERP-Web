@@ -32,7 +32,7 @@ class AppDownloadTest extends TestCase
         $this->get('/')->assertSee('Get the Android app')->assertSee('v2.0.1');
         $res = $this->get(route('app.download'));
         $res->assertOk()->assertHeader('content-type', 'application/vnd.android.package-archive');
-        $this->assertStringContainsString('RestoPro-ERP-2.0.1.apk', $res->headers->get('content-disposition'));
+        $this->assertStringContainsString('OpenRestoPro-ERP-2.0.1.apk', $res->headers->get('content-disposition'));
 
         // a cashier can download it (from Profile), but only the owner can upload
         $cashier = User::factory()->create(['role' => 'cashier']);

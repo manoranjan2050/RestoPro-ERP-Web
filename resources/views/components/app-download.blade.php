@@ -8,7 +8,7 @@
             <div class="min-w-0 flex-1">
                 <p class="text-lg font-bold">Get the Android app</p>
                 <p class="text-sm text-white/85">
-                    RestoPro ERP {{ $apk['version'] ? 'v'.$apk['version'] : '' }} · {{ \App\Support\AndroidApp::sizeLabel($apk['size']) }}
+                    OpenRestoPro ERP {{ $apk['version'] ? 'v'.$apk['version'] : '' }} · {{ \App\Support\AndroidApp::sizeLabel($apk['size']) }}
                     @if ($apk['uploaded_at']) · updated {{ \Illuminate\Support\Carbon::parse($apk['uploaded_at'])->format('d M Y') }}@endif
                 </p>
                 <p class="mt-1 text-xs text-white/75">Open this page on the phone, tap Download, then open the file. Android asks once to “allow installs from this source”.</p>

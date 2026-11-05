@@ -1,4 +1,4 @@
-# RestoPro ERP Web — session notes
+# OpenRestoPro ERP Web — session notes
 
 Read README.md and docs/SETUP.md first. If CLAUDE.local.md exists (maintainer's machine), read it too — it points
 to the private plan/TODO and the live-server notes.

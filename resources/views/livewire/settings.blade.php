@@ -364,7 +364,7 @@
             <span class="grid size-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-brand-400 via-rose-500 to-violet-600 text-2xl font-black">M</span>
             <div class="min-w-0 flex-1">
                 <p class="text-xs uppercase tracking-[.25em] text-slate-400">About this software</p>
-                <p class="text-lg font-bold">RestoPro ERP · developed by <span class="bg-gradient-to-r from-brand-300 to-violet-300 bg-clip-text text-transparent">MANORANJAN</span></p>
+                <p class="text-lg font-bold">OpenRestoPro ERP · developed by <span class="bg-gradient-to-r from-brand-300 to-violet-300 bg-clip-text text-transparent">MANORANJAN</span></p>
                 <p class="text-sm text-slate-400">manoranjan.dev · github.com/manoranjan2050 · open source (MIT)</p>
             </div>
             <span class="rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold transition group-hover:bg-white/20">Developer profile →</span>

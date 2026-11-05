@@ -2,7 +2,7 @@
     "$schema": "https://getcomposer.org/schema.json",
     "name": "manoranjan2050/restopro-erp",
     "type": "project",
-    "description": "RestoPro ERP — open-source restaurant back-office: daily sales, expenses, vendor khata, staff attendance & salary ledger, reports and cloud backups.",
+    "description": "OpenRestoPro ERP — open-source restaurant back-office: daily sales, expenses, vendor khata, staff attendance & salary ledger, reports and cloud backups.",
     "keywords": [
         "restaurant", "erp", "laravel", "livewire", "accounting", "staff-ledger", "india"
     ],

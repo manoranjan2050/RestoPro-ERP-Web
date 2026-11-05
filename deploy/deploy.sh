@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deploy RestoPro ERP to shared hosting over SSH (tested on Hostinger; works on any host with PHP 8.2+, SSH and Composer).
+# Deploy OpenRestoPro ERP to shared hosting over SSH (tested on Hostinger; works on any host with PHP 8.2+, SSH and Composer).
 #
 #   ~/$APP_DIR/            Laravel app (code, .env, storage) — NOT web reachable
 #   ~/$WEB_DIR             symlink → ~/$APP_DIR/public   (the folder your (sub)domain serves)
