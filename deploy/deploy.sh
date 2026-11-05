@@ -8,12 +8,15 @@
 # Usage (from the project root, Git Bash / Linux / macOS):
 #   ./deploy/deploy.sh             # deploy current HEAD (commit first!)
 #   FIRST=1 ./deploy/deploy.sh     # first time: also links the web folder to the app
+#   DEPLOY_ENV=deploy/other.env ./deploy/deploy.sh   # another copy (its own APP_DIR / WEB_DIR / .env / database)
 #
 # The server .env is created by hand once (see deploy/env.production.example) and is never overwritten.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
-[ -f deploy/deploy.env ] && . deploy/deploy.env
+# DEPLOY_ENV picks another config for a second copy, e.g. DEPLOY_ENV=deploy/friend.env ./deploy/deploy.sh
+CFG="${DEPLOY_ENV:-deploy/deploy.env}"
+[ -f "$CFG" ] && . "$CFG"
 : "${DEPLOY_HOST:?Set DEPLOY_HOST (user@host) in deploy/deploy.env}"
 DEPLOY_PORT="${DEPLOY_PORT:-22}"
 DEPLOY_KEY="${DEPLOY_KEY:-$HOME/.ssh/id_ed25519}"

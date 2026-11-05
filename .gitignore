@@ -28,4 +28,4 @@ Thumbs.db
 # Local-only notes and deploy config (never published)
 /.private
 CLAUDE.local.md
-/deploy/deploy.env
+/deploy/*.env
