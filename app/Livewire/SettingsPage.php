@@ -46,6 +46,10 @@ class SettingsPage extends Component
     public string $weight_unit = 'kg';
     public string $shop_type = 'other';
 
+    // Android app APK
+    public $apk;
+    public string $apkVersion = '';
+
     public string $currency_symbol = '₹';
     public string $fy_start_month = '4';
 
@@ -122,6 +126,30 @@ class SettingsPage extends Component
         }
         $this->dispatch('toast', message: $this->mode === 'advanced' ? 'Advanced mode on — the Sales menu is now in the sidebar' : 'Simple mode on');
         $this->redirectRoute('settings', ['tab' => 'mode'], navigate: true); // rebuild the sidebar
+    }
+
+    public function uploadApk(): void
+    {
+        Gate::authorize('manage-settings');
+        $this->apkVersion = trim($this->apkVersion);
+        $this->validate([
+            'apk' => ['required', 'file', 'max:102400', function ($attr, $file, $fail) {
+                if (strtolower($file->getClientOriginalExtension()) !== 'apk') {
+                    $fail('Choose the .apk file of the app.');
+                }
+            }],
+            'apkVersion' => ['required', 'string', 'max:20', 'regex:/^[0-9A-Za-z.\-]+$/'],
+        ], [], ['apk' => 'APK file', 'apkVersion' => 'version']);
+        \App\Support\AndroidApp::store($this->apk, $this->apkVersion);
+        $this->reset('apk', 'apkVersion');
+        $this->dispatch('toast', message: 'App uploaded — staff can download it from the Dashboard');
+    }
+
+    public function removeApk(): void
+    {
+        Gate::authorize('manage-settings');
+        \App\Support\AndroidApp::remove();
+        $this->dispatch('toast', message: 'App file removed');
     }
 
     public function saveBilling(): void

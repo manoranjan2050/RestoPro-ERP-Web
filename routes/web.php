@@ -16,6 +16,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/', Dashboard::class)->name('dashboard');
     Route::get('/profile', Profile::class)->name('profile');
 
+    // Android app APK (until it is on the Play Store) — any signed-in user, so staff can install it on their phones.
+    Route::get('/app/download', function () {
+        abort_unless(\App\Support\AndroidApp::info(), 404);
+
+        return Storage::disk(\App\Support\AndroidApp::DISK)->download(\App\Support\AndroidApp::PATH, \App\Support\AndroidApp::fileName(), [
+            'Content-Type' => 'application/vnd.android.package-archive',
+            'Cache-Control' => 'private, no-cache',
+        ]);
+    })->name('app.download');
+
     // v2 sales (Advanced mode). Items + customers are back-office; the POS (Phase 15) is open to cashiers too.
     Route::middleware(['advanced', 'can:back-office'])->group(function () {
         Route::get('/items', \App\Livewire\Sales\Items::class)->name('items');

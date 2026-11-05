@@ -90,4 +90,6 @@
             </div>
         </form>
     </div>
+
+    <x-app-download class="lg:col-span-3" />
 </div>

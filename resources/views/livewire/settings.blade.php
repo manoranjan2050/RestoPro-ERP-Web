@@ -2,7 +2,7 @@
     {{-- Tabs --}}
     <div class="flex max-w-full overflow-x-auto">
         <div class="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            @foreach (['business' => 'Business', 'mode' => 'Mode & sales', 'gst' => 'GST', 'printing' => 'Printing', 'money' => 'Money & year', 'users' => 'Users & access'] as $k => $l)
+            @foreach (['business' => 'Business', 'mode' => 'Mode & sales', 'gst' => 'GST', 'printing' => 'Printing', 'app' => 'Android app', 'money' => 'Money & year', 'users' => 'Users & access'] as $k => $l)
                 <button wire:click="$set('tab', '{{ $k }}')" @class([
                     'whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-semibold',
                     'bg-gradient-to-r from-brand-500 to-rose-500 text-white shadow' => $tab === $k,
@@ -267,6 +267,41 @@
                 </div>
             </div>
         </form>
+    @elseif ($tab === 'app')
+        <div class="grid gap-6 lg:grid-cols-2">
+            <div class="space-y-4">
+                @php $apkInfo = \App\Support\AndroidApp::info(); @endphp
+                @if ($apkInfo)
+                    <x-app-download />
+                    <div class="card p-4 text-xs text-slate-500">
+                        <p>File: {{ \App\Support\AndroidApp::fileName() }} · {{ \App\Support\AndroidApp::sizeLabel($apkInfo['size']) }}</p>
+                        @if ($apkInfo['sha256'])<p class="mt-1 break-all">SHA-256: <span class="font-mono">{{ $apkInfo['sha256'] }}</span></p>@endif
+                        <button type="button" wire:click="removeApk" wire:confirm="Remove the app file? The download button disappears until you upload one again." class="mt-3 font-semibold text-rose-600 hover:underline">Remove app file</button>
+                    </div>
+                @else
+                    <div class="card px-6 py-10 text-center text-sm text-slate-500">No app uploaded yet. Upload the .apk and a Download button appears on the Dashboard and here.</div>
+                @endif
+            </div>
+            <form wire:submit="uploadApk" class="card space-y-4 p-5 sm:p-6">
+                <div>
+                    <h3 class="text-base font-bold">{{ \App\Support\AndroidApp::info() ? 'Upload a new version' : 'Upload the Android app' }}</h3>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Until the app is on the Play Store, staff install it from here. Signed-in users only — the file isn't public.</p>
+                </div>
+                <label class="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-slate-300 px-4 py-8 text-center hover:border-brand-400 dark:border-slate-700">
+                    <x-icon name="upload" class="size-7 text-slate-400" />
+                    <span class="text-sm font-semibold">{{ $apk ? $apk->getClientOriginalName() : 'Choose the .apk file' }}</span>
+                    <input type="file" wire:model="apk" accept=".apk,application/vnd.android.package-archive" class="sr-only">
+                </label>
+                <p wire:loading wire:target="apk" class="text-sm text-slate-500">Uploading…</p>
+                @error('apk') <p class="error">{{ $message }}</p> @enderror
+                <div>
+                    <label class="label" for="apkv">Version</label>
+                    <input id="apkv" wire:model="apkVersion" class="input w-40" placeholder="2.0.1">
+                    @error('apkVersion') <p class="error">{{ $message }}</p> @enderror
+                </div>
+                <div class="flex justify-end"><button class="btn-primary" wire:loading.attr="disabled" wire:target="uploadApk,apk">Upload</button></div>
+            </form>
+        </div>
     @elseif ($tab === 'money')
         <form wire:submit="saveMoney" class="card max-w-2xl p-5 sm:p-6">
             <h3 class="text-base font-bold">Money & financial year</h3>

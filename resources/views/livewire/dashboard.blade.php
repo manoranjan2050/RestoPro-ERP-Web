@@ -159,4 +159,7 @@
         </a>
     </div>
     </div>
+
+    {{-- Android app download (once the owner uploads the APK in Settings → Android app) --}}
+    <x-app-download />
 </div>
